@@ -1,0 +1,8 @@
+{
+  "name": "Apollo Basti Clinic",
+  "description": "A comprehensive hospital and diagnostic center website for Basti, Uttar Pradesh, featuring dynamic OPD schedules, specialist services, and medical consultations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Apollo Clinic, Basti</title>
+    <link rel="icon" type="image/png" href="https://www.apolloclinic.com/assets/images/favicon.png">
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "MedicalClinic",
+        "name": "Apollo Clinic Basti",
+        "alternateName": "Apollo Basti Clinic",
+        "url": "https://apollobasti.com",
+        "logo": "https://www.apolloclinic.com/assets/images/logo.png",
+        "image": "https://www.apolloclinic.com/assets/images/logo.png",
+        "description": "Hospital and diagnostic center in Basti, Uttar Pradesh. Part of Apollo Clinic Gorakhpur Group.",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Station Road",
+          "addressLocality": "Basti",
+          "addressRegion": "UP",
+          "postalCode": "272002",
+          "addressCountry": "IN"
+        },
+        "telephone": "8004055501"
+      }
+    </script>
+    <script>
+      // Disable right-click
+      document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+      // Disable specific keyboard shortcuts
+      document.onkeydown = function(e) {
+        if (e.keyCode == 123) { // F12
+          return false;
+        }
+        if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { // Ctrl+Shift+I
+          return false;
+        }
+        if (e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { // Ctrl+Shift+C
+          return false;
+        }
+        if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { // Ctrl+Shift+J
+          return false;
+        }
+        if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { // Ctrl+U (View Source)
+          return false;
+        }
+        if (e.ctrlKey && e.keyCode == 'S'.charCodeAt(0)) { // Ctrl+S (Save page)
+          return false;
+        }
+      };
+
+      // Clear console when developer tools are opened
+      setInterval(() => {
+        const devtools = /./;
+        devtools.toString = function() {
+          console.clear();
+          return '';
+        }
+        console.log('%c', devtools);
+      }, 1000);
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
