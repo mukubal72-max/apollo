@@ -5,6 +5,7 @@ export interface OPDDoctor {
   specialty: string;
   qualifications: string;
   experience: string;
+  departmentId?: string;
   visitingDate: string;
   location: string;
   photo?: string; // Base64 or URL

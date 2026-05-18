@@ -566,6 +566,19 @@ export default function Admin() {
                             />
                           </div>
                           <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-black text-slate-400">Department</label>
+                            <select 
+                              value={doc.departmentId || ''} 
+                              onChange={(e) => updateDoctor(doc.id, { departmentId: e.target.value })}
+                              className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm"
+                            >
+                              <option value="">Select Department</option>
+                              {departments.map(d => (
+                                <option key={d.id} value={d.id}>{d.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="space-y-1">
                             <label className="text-[10px] uppercase font-black text-slate-400">Specialty Area</label>
                             <input 
                               value={doc.specialty} 
@@ -670,16 +683,18 @@ export default function Admin() {
                       onClick={() => {
                       const name = prompt('Patient Name:');
                       const phone = prompt('Patient Phone:');
+                      const date = prompt('Appointment Date (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
                       const docId = opdDoctors[0]?.id;
-                      if(name && phone && docId) {
-                        setAppointments([...appointments, {
+                      if(name && phone && date && docId) {
+                        setAppointments([{
                           id: Date.now().toString(),
                           patientName: name,
                           patientPhone: phone,
                           doctorId: docId,
-                          date: new Date().toISOString().split('T')[0],
-                          status: 'confirmed'
-                        }]);
+                          date: date,
+                          status: 'confirmed',
+                          type: 'doctor'
+                        }, ...appointments]);
                       }
                     }}
                     className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-xl font-bold shadow-md hover:scale-105 transition-all text-xs uppercase"
@@ -759,6 +774,61 @@ export default function Admin() {
                             </td>
                             <td className="p-4">
                               <div className="flex justify-center gap-2">
+                                <button 
+                                  onClick={() => {
+                                    const printWindow = window.open('', '_blank');
+                                    if (printWindow) {
+                                      const doctorName = app.type === 'package' 
+                                        ? healthPackages.find(p => p.id === app.doctorId)?.name 
+                                        : opdDoctors.find(d => d.id === app.doctorId)?.name;
+                                      
+                                      printWindow.document.write(`
+                                        <html>
+                                          <head>
+                                            <title>Appointment Slip - Apollo Clinic Basti</title>
+                                            <style>
+                                              body { font-family: sans-serif; padding: 40px; }
+                                              .slip { border: 2px solid #007a8e; padding: 30px; border-radius: 20px; max-width: 500px; margin: auto; }
+                                              .header { text-align: center; border-bottom: 2px solid #f39223; padding-bottom: 20px; margin-bottom: 20px; }
+                                              .logo { font-size: 24px; font-weight: 900; color: #007a8e; }
+                                              .brand { color: #f39223; }
+                                              .info-row { display: flex; justify-between; margin-bottom: 12px; }
+                                              .label { font-weight: bold; font-size: 10px; text-transform: uppercase; color: #666; }
+                                              .value { font-weight: bold; font-size: 14px; text-align: right; flex-grow: 1; }
+                                              .footer { text-align: center; margin-top: 30px; font-size: 10px; color: #999; }
+                                              @media print { .no-print { display: none; } }
+                                            </style>
+                                          </head>
+                                          <body>
+                                            <div class="slip">
+                                              <div class="header">
+                                                <div class="logo">Apollo <span class="brand">Clinic</span></div>
+                                                <div style="font-size: 10px; font-weight: bold; margin-top: 4px;">BASTI • 8004055501</div>
+                                              </div>
+                                              <div class="info-row"><span class="label">Token ID:</span> <span class="value">${app.id.slice(-6)}</span></div>
+                                              <div class="info-row"><span class="label">Patient:</span> <span class="value">${app.patientName}</span></div>
+                                              <div class="info-row"><span class="label">Contact:</span> <span class="value">${app.patientPhone}</span></div>
+                                              <div class="info-row"><span class="label">Date:</span> <span class="value">${formatDate(app.date)}</span></div>
+                                              <div class="info-row"><span class="label">Time:</span> <span class="value">${app.time || 'General OPD'}</span></div>
+                                              <div class="info-row"><span class="label">Type:</span> <span class="value" style="text-transform: uppercase;">${app.type || 'Doctor Consultation'}</span></div>
+                                              <div class="info-row"><span class="label">Reference:</span> <span class="value">${doctorName || 'N/A'}</span></div>
+                                              <div class="footer">
+                                                Please bring this slip at the reception.<br>
+                                                Apollo Clinic Basti - Caring for You.
+                                              </div>
+                                            </div>
+                                            <script>window.print();</script>
+                                          </body>
+                                        </html>
+                                      `);
+                                      printWindow.document.close();
+                                    }
+                                  }}
+                                  className="p-2 bg-slate-50 text-slate-600 rounded-lg hover:bg-primary hover:text-white transition-all"
+                                  title="Print Slip"
+                                >
+                                  <FileText size={16} />
+                                </button>
                                 <button 
                                   onClick={() => updateAppointmentStatus(app.id, 'confirmed')}
                                   className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all"

@@ -75,9 +75,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ]);
 
         if (site) setSiteConfig(site.config_data as SiteConfig);
-        if (docs) setOpdDoctors(docs);
+        if (docs) {
+          setOpdDoctors(docs.map(d => ({
+            id: d.id,
+            name: d.name,
+            specialty: d.specialty,
+            qualifications: d.qualifications,
+            experience: d.experience,
+            departmentId: d.department_id,
+            visitingDate: d.visiting_date,
+            location: d.location,
+            photo: d.photo,
+            isAvailable: d.is_available,
+            expiryDate: d.expiry_date
+          })));
+        }
         if (pkgs) setHealthPackages(pkgs);
-        if (apps) setAppointments(apps);
+        if (apps) {
+          setAppointments(apps.map(a => ({
+            id: a.id,
+            patientName: a.patient_name,
+            patientPhone: a.patient_phone,
+            patientWhatsapp: a.patient_whatsapp,
+            patientAddress: a.patient_address,
+            doctorId: a.doctor_id,
+            date: a.date,
+            time: a.time,
+            status: a.status,
+            type: a.type,
+            isHomeCollection: a.is_home_collection,
+            claimOffer: a.claim_offer,
+            finalPrice: a.final_price
+          })));
+        }
         if (tests) setTestimonials(tests);
         if (depts) setDepartments(depts);
         if (clinicFiles) setDocuments(clinicFiles.map(f => ({
@@ -103,7 +133,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const wrappedSetDoctors = async (doctors: OPDDoctor[]) => {
     setOpdDoctors(doctors);
-    if (supabase) await supabase.from('opd_doctors').upsert(doctors);
+    if (supabase) {
+      const dbDocs = doctors.map(d => ({
+        id: d.id,
+        name: d.name,
+        specialty: d.specialty,
+        qualifications: d.qualifications,
+        experience: d.experience,
+        department_id: d.departmentId,
+        visiting_date: d.visitingDate,
+        location: d.location,
+        photo: d.photo,
+        is_available: d.isAvailable,
+        expiry_date: d.expiryDate
+      }));
+      await supabase.from('opd_doctors').upsert(dbDocs);
+    }
   };
 
   const wrappedSetPackages = async (pkgs: HealthPackage[]) => {

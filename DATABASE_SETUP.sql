@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS opd_doctors (
   specialty TEXT,
   qualifications TEXT,
   experience TEXT,
+  department_id TEXT,
   visiting_date TEXT,
   location TEXT,
   is_available BOOLEAN DEFAULT true,
