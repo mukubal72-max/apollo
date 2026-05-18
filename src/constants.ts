@@ -64,6 +64,8 @@ export const INITIAL_OPD_SCHEDULE: OPDDoctor[] = [
     location: "At Basti Branch",
     isAvailable: true,
     expiryDate: "2026-03-27",
+    fee: 800,
+    consultationTime: "11:00 AM - 03:00 PM"
   },
   {
     id: "2",
@@ -76,6 +78,8 @@ export const INITIAL_OPD_SCHEDULE: OPDDoctor[] = [
     location: "At Basti Branch",
     isAvailable: true,
     expiryDate: "2026-03-22",
+    fee: 800,
+    consultationTime: "10:00 AM - 02:00 PM"
   },
   {
     id: "3",
@@ -88,6 +92,8 @@ export const INITIAL_OPD_SCHEDULE: OPDDoctor[] = [
     location: "At Basti Branch",
     isAvailable: true,
     expiryDate: "2026-03-21",
+    fee: 800,
+    consultationTime: "10:00 AM - 02:00 PM"
   },
   {
     id: "4",
@@ -100,6 +106,8 @@ export const INITIAL_OPD_SCHEDULE: OPDDoctor[] = [
     location: "At Basti Branch",
     isAvailable: true,
     expiryDate: "2026-05-30",
+    fee: 1000,
+    consultationTime: "09:00 AM - 01:00 PM"
   },
   {
     id: "5",
@@ -112,6 +120,8 @@ export const INITIAL_OPD_SCHEDULE: OPDDoctor[] = [
     visitingDate: "2026-05-20",
     location: "At Basti Branch",
     isAvailable: true,
+    fee: 600,
+    consultationTime: "10:00 AM - 04:00 PM"
   },
   {
     id: "6",
@@ -124,6 +134,8 @@ export const INITIAL_OPD_SCHEDULE: OPDDoctor[] = [
     visitingDate: "2026-03-01",
     location: "At Basti Branch",
     isAvailable: true,
+    fee: 500,
+    consultationTime: "10:30 AM - 06:30 PM"
   },
   {
     id: "7",
@@ -136,6 +148,8 @@ export const INITIAL_OPD_SCHEDULE: OPDDoctor[] = [
     visitingDate: "2026-03-01",
     location: "At Basti Branch",
     isAvailable: true,
+    fee: 600,
+    consultationTime: "10:00 AM - 06:00 PM"
   },
 ];
 

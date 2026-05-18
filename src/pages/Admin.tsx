@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { Plus, Trash2, Settings, Users, Activity, Lock, Upload, Image as ImageIcon, Calendar, Check, X, Phone, User, Clock, Shield, FlaskConical, FileText } from 'lucide-react';
+import { Plus, Trash2, Settings, Users, Activity, Lock, Upload, Image as ImageIcon, Calendar, Check, X, Phone, User, Clock, Shield, FlaskConical, FileText, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { OPDDoctor, Appointment, Testimonial, Department, HealthPackage, ClinicDocument } from '../types';
 
@@ -128,7 +128,9 @@ export default function Admin() {
       visitingDate: new Date().toISOString().split('T')[0],
       location: 'At Basti Branch',
       isAvailable: true,
-      expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      fee: 600,
+      consultationTime: '10:00 AM - 02:00 PM'
     };
     setOpdDoctors([newDoc, ...opdDoctors]);
   };
@@ -144,10 +146,39 @@ export default function Admin() {
   };
 
   // Appointment Management
+  const notifyPatientViaWhatsApp = (app: Appointment) => {
+    const doctor = opdDoctors.find(d => d.id === app.doctorId);
+    const pkg = healthPackages.find(p => p.id === app.doctorId);
+    const refName = app.type === 'package' ? (pkg?.name || 'Health Package') : (doctor?.name || 'General Appointment');
+    
+    const message = encodeURIComponent(
+      `*Appointment Confirmed - Apollo Clinic Basti*\n\n` +
+      `Dear ${app.patientName},\n` +
+      `Your appointment for *${refName}* has been *ACCEPTED & CONFIRMED*.\n\n` +
+      `*Date:* ${formatDate(app.date)}\n` +
+      `*Time:* ${app.time || 'As per slot'}\n` +
+      `*Status:* Confirmed\n\n` +
+      `Clinic Address: Railway Station Rd, near Navin Fal Mandi, Basti, Uttar Pradesh 272001\n` +
+      `Contact: 8004055501\n\n` +
+      `_Please reach 15 minutes before your time._`
+    );
+    
+    const phone = app.patientWhatsapp || app.patientPhone;
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    const finalPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+    
+    window.open(`https://wa.me/${finalPhone}?text=${message}`, '_blank');
+  };
+
   const updateAppointmentStatus = (id: string, status: Appointment['status']) => {
     const app = appointments.find(a => a.id === id);
     if (app) {
       setAppointments(appointments.map(a => a.id === id ? { ...a, status } : a));
+      if (status === 'confirmed') {
+        if (confirm('Appointment confirmed! Would you like to send a WhatsApp notification to the patient?')) {
+          notifyPatientViaWhatsApp(app);
+        }
+      }
     }
   };
 
@@ -644,6 +675,24 @@ export default function Admin() {
                           </div>
 
                           <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-black text-slate-400">Consultation Fee (₹)</label>
+                            <input 
+                              type="number"
+                              value={doc.fee || 600} 
+                              onChange={(e) => updateDoctor(doc.id, { fee: Number(e.target.value) })}
+                              className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-black text-slate-400">Consultation Timing</label>
+                            <input 
+                              value={doc.consultationTime || '10:00 AM - 02:00 PM'} 
+                              onChange={(e) => updateDoctor(doc.id, { consultationTime: e.target.value })}
+                              placeholder="e.g. 10:00 AM - 02:00 PM"
+                              className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
                             <label className="text-[10px] uppercase font-black text-slate-400">Specialty Area</label>
                             <input 
                               value={doc.specialty} 
@@ -839,6 +888,13 @@ export default function Admin() {
                             </td>
                             <td className="p-4">
                               <div className="flex justify-center gap-2">
+                                <button 
+                                  onClick={() => notifyPatientViaWhatsApp(app)}
+                                  className="p-2 hover:bg-green-50 text-green-600 rounded-lg transition-all"
+                                  title="Send WhatsApp Notification"
+                                >
+                                  <MessageCircle size={16} />
+                                </button>
                                 <button 
                                   onClick={() => {
                                     const printWindow = window.open('', '_blank');

@@ -65,27 +65,36 @@ export default function OPDPopup() {
   };
 
   const shareOnWhatsApp = () => {
-    const message = `*Booking Confirmed - Apollo Clinic Basti*%0A%0A` +
-      `*Patient:* ${patientData.name}%0A` +
-      `*Type:* ${selectedPackage ? 'Health Package' : 'Doctor Consultation'}%0A` +
-      `*Reference:* ${selectedPackage ? selectedPackage.name : selectedDoctor?.name}%0A` +
-      `*Date:* ${formatDate(patientData.date)}%0A` +
-      `*Time:* ${patientData.time}%0A` +
-      (isHomeCollection ? `*Home Collection:* YES (10% Discount Applied)%0A` : '') +
-      (patientData.claimOffer ? `*Claimed Special Offer:* YES%0A` : '') +
-      `*Address:* ${patientData.address}%0A` +
-      `*Contact:* ${patientData.phone}%0A` +
-      (selectedPackage ? `*Total Amount:* ₹${finalPrice}%0A` : '') +
-      `%0A_Please confirm my booking._`;
+    const rawMessage = `*Booking Confirmed - Apollo Clinic Basti*\n\n` +
+      `*Patient:* ${patientData.name}\n` +
+      `*Type:* ${selectedPackage ? 'Health Package' : 'Doctor Consultation'}\n` +
+      `*Reference:* ${selectedPackage ? selectedPackage.name : selectedDoctor?.name}\n` +
+      `*Date:* ${formatDate(patientData.date)}\n` +
+      `*Time:* ${patientData.time}\n` +
+      (isHomeCollection ? `*Home Collection:* YES (10% Discount Applied)\n` : '') +
+      (patientData.claimOffer ? `*Claimed Special Offer:* YES\n` : '') +
+      `*Address:* ${patientData.address}\n` +
+      `*Contact:* ${patientData.phone}\n` +
+      (selectedPackage ? `*Total Amount:* ₹${finalPrice}\n` : '') +
+      `\n_Please confirm my booking._`;
+
+    const message = encodeURIComponent(rawMessage);
 
     // Send to clinic number instead of patient self-share
-    const clinicNumber = siteConfig.contact?.replace(/[^0-9]/g, '') || '9250877505';
+    const clinicNumber = siteConfig.contact?.replace(/[^0-9]/g, '') || '8004055501';
     const whatsappUrl = `https://wa.me/91${clinicNumber}?text=${message}`;
     window.open(whatsappUrl, '_blank');
   };
 
   useEffect(() => {
     if (selectedDoctor) {
+      if (selectedDoctor.consultationTime) {
+        // Extract start time from "10:00 AM - 02:00 PM"
+        const startTimeMatch = selectedDoctor.consultationTime.match(/(\d{2}:\d{2})/);
+        if (startTimeMatch) {
+          setPatientData(prev => ({ ...prev, time: startTimeMatch[1] }));
+        }
+      }
       if (selectedDoctor.availabilityType === 'visiting') {
         setPatientData(prev => ({ ...prev, date: selectedDoctor.visitingDate }));
       } else if (selectedDoctor.availabilityType === 'regular' && selectedDoctor.availableDays?.length) {
@@ -153,11 +162,29 @@ export default function OPDPopup() {
       type: selectedPackageId ? 'package' as const : 'doctor' as const,
       isHomeCollection: isHomeCollection,
       claimOffer: patientData.claimOffer,
-      finalPrice: selectedPackage ? finalPrice : undefined
+      finalPrice: selectedPackage ? finalPrice : (selectedDoctor?.fee || 600)
     };
 
     setAppointments([...appointments, newAppointment]);
     setStep('success');
+    
+    // Automatically trigger WhatsApp share
+    const rawMessage = `*Booking Confirmed - Apollo Clinic Basti*\n\n` +
+      `*Patient:* ${patientData.name}\n` +
+      `*Type:* ${selectedPackageId ? 'Health Package' : 'Doctor Consultation'}\n` +
+      `*Reference:* ${selectedPackage ? selectedPackage.name : selectedDoctor?.name}\n` +
+      `*Date:* ${formatDate(patientData.date)}\n` +
+      `*Time:* ${patientData.time}\n` +
+      (isHomeCollection ? `*Home Collection:* YES (10% Discount Applied)\n` : '') +
+      (patientData.claimOffer ? `*Claimed Special Offer:* YES\n` : '') +
+      `*Address:* ${patientData.address}\n` +
+      `*Contact:* ${patientData.phone}\n` +
+      (selectedPackage ? `*Total Amount:* ₹${finalPrice}\n` : '') +
+      `\n_Please confirm my booking._`;
+
+    const message = encodeURIComponent(rawMessage);
+    const clinicNumber = siteConfig.contact?.replace(/[^0-9]/g, '') || '8004055501';
+    window.open(`https://wa.me/91${clinicNumber}?text=${message}`, '_blank');
   };
 
   const closePopup = () => {
@@ -572,6 +599,12 @@ export default function OPDPopup() {
                           <span className="text-[10px] font-black uppercase text-slate-400">Date & Time</span>
                           <span className="text-sm font-bold text-slate-600">{formatDate(patientData.date)} at {patientData.time}</span>
                         </div>
+                        {selectedDoctor && (
+                          <div className="flex justify-between items-center border-b border-slate-200 pb-4">
+                            <span className="text-[10px] font-black uppercase text-slate-400">Registration Fee</span>
+                            <span className="text-sm font-black text-secondary uppercase">₹{selectedDoctor.fee || 600}</span>
+                          </div>
+                        )}
                         {selectedPackage && (
                           <>
                             <div className="flex justify-between items-center border-b border-slate-200 pb-4">

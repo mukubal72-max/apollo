@@ -43,13 +43,17 @@ export default function Navbar() {
       {/* Main Header - White with logo and contact info */}
       <div className="bg-white px-4 md:px-8 py-3">
         <div className="container mx-auto flex flex-col lg:flex-row justify-between items-center gap-4">
-          <Link to="/" className="flex items-center">
+          <Link to="/" className="flex items-center gap-4">
             <div className="flex flex-col items-center">
               <img 
                 src={siteConfig.logo || "https://www.apolloclinic.com/assets/images/logo.png"} 
                 alt={siteConfig.name} 
-                className="h-24 w-auto object-contain" 
+                className="h-20 md:h-24 w-auto object-contain" 
               />
+            </div>
+            <div className="hidden sm:block border-l border-slate-200 pl-4">
+              <p className="text-[10px] font-black uppercase text-slate-400 leading-none mb-1">Clinic Licensee</p>
+              <h1 className="text-sm font-black text-primary uppercase tracking-tighter leading-none">C SQUARE MEDCO LLP</h1>
             </div>
           </Link>
 

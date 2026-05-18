@@ -49,21 +49,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [departments, setDepartments] = useState<Department[]>(INITIAL_DEPARTMENTS);
   const [healthPackages, setHealthPackages] = useState<HealthPackage[]>(INITIAL_HEALTH_PACKAGES);
   const [documents, setDocuments] = useState<ClinicDocument[]>([]);
+  const [isInitialLoadDone, setIsInitialLoadDone] = useState(false);
 
   // Initial Load from Supabase
   useEffect(() => {
     async function loadData() {
-      if (!supabase) return;
+      if (!supabase) {
+        setIsInitialLoadDone(true);
+        return;
+      }
       
       try {
         const [
-          { data: site },
-          { data: docs },
-          { data: pkgs },
-          { data: apps },
-          { data: tests },
-          { data: depts },
-          { data: clinicFiles }
+          { data: site, error: siteErr },
+          { data: docs, error: docsErr },
+          { data: pkgs, error: pkgsErr },
+          { data: apps, error: appsErr },
+          { data: tests, error: testsErr },
+          { data: depts, error: deptsErr },
+          { data: clinicFiles, error: docsFileErr }
         ] = await Promise.all([
           supabase.from('site_config').select('*').single(),
           supabase.from('opd_doctors').select('*').order('created_at'),
@@ -74,8 +78,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           supabase.from('clinic_documents').select('*').order('created_at')
         ]);
 
+        if (siteErr && siteErr.code !== 'PGRST116') console.error("Site config load error:", siteErr);
+        if (docsErr) console.error("Doctors load error:", docsErr);
+        if (pkgsErr) console.error("Packages load error:", pkgsErr);
+        if (appsErr) console.error("Appointments load error:", appsErr);
+
         if (site) setSiteConfig(site.config_data as SiteConfig);
-        if (docs) {
+        if (docs && docs.length > 0) {
           setOpdDoctors(docs.map(d => ({
             id: d.id,
             name: d.name,
@@ -89,11 +98,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
             location: d.location,
             photo: d.photo,
             isAvailable: d.is_available,
-            expiryDate: d.expiry_date
+            expiryDate: d.expiry_date,
+            fee: d.fee,
+            consultationTime: d.consultation_time
           })));
         }
-        if (pkgs) setHealthPackages(pkgs);
-        if (apps) {
+        if (pkgs && pkgs.length > 0) {
+          setHealthPackages(pkgs.map(p => ({
+            id: p.id,
+            name: p.name,
+            actualPrice: p.actual_price,
+            offerPrice: p.offer_price,
+            totalTests: p.total_tests,
+            tests: p.tests,
+            discountBadge: p.discount_badge,
+            description: p.description
+          })));
+        }
+        if (apps && apps.length > 0) {
           setAppointments(apps.map(a => ({
             id: a.id,
             patientName: a.patient_name,
@@ -107,35 +129,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
             type: a.type,
             isHomeCollection: a.is_home_collection,
             claimOffer: a.claim_offer,
-            finalPrice: a.final_price
+            finalPrice: Number(a.final_price) || 0
           })));
         }
-        if (tests) setTestimonials(tests);
-        if (depts) setDepartments(depts);
-        if (clinicFiles) setDocuments(clinicFiles.map(f => ({
+        if (tests && tests.length > 0) setTestimonials(tests);
+        if (depts && depts.length > 0) {
+          setDepartments(depts.map(d => ({
+            id: d.id,
+            name: d.name,
+            headOfDepartment: d.head_of_department,
+            description: d.description
+          })));
+        }
+        if (clinicFiles && clinicFiles.length > 0) setDocuments(clinicFiles.map(f => ({
           id: f.id,
           name: f.name,
           fileData: f.file_url,
           uploadDate: f.upload_date
         })));
       } catch (e) {
-        console.error("Supabase load error, using defaults:", e);
+        console.error("Supabase load exception:", e);
+      } finally {
+        setIsInitialLoadDone(true);
       }
     }
     loadData();
   }, []);
 
-  // Sync Site Config
-  useEffect(() => {
-    localStorage.setItem('siteConfig', JSON.stringify(siteConfig));
-    if (supabase) {
-      supabase.from('site_config').upsert({ id: 'config', config_data: siteConfig }).then();
+  // Use a wrapped setter for siteConfig to avoid auto-sync during load
+  const wrappedSetSiteConfig = async (config: SiteConfig) => {
+    setSiteConfig(config);
+    if (supabase && isInitialLoadDone) {
+      const { error } = await supabase.from('site_config').upsert({ id: 'config', config_data: config });
+      if (error) console.error("Site sync error:", error);
     }
-  }, [siteConfig]);
+  };
 
   const wrappedSetDoctors = async (doctors: OPDDoctor[]) => {
     setOpdDoctors(doctors);
-    if (supabase) {
+    if (supabase && isInitialLoadDone) {
       const dbDocs = doctors.map(d => ({
         id: d.id,
         name: d.name,
@@ -149,59 +181,93 @@ export function AppProvider({ children }: { children: ReactNode }) {
         location: d.location,
         photo: d.photo,
         is_available: d.isAvailable,
-        expiry_date: d.expiryDate
+        expiry_date: d.expiryDate,
+        fee: d.fee,
+        consultation_time: d.consultationTime
       }));
-      await supabase.from('opd_doctors').upsert(dbDocs);
+      const { error } = await supabase.from('opd_doctors').upsert(dbDocs);
+      if (error) console.error("Doctors sync error:", error);
     }
   };
 
   const wrappedSetPackages = async (pkgs: HealthPackage[]) => {
     setHealthPackages(pkgs);
-    if (supabase) await supabase.from('health_packages').upsert(pkgs);
+    if (supabase && isInitialLoadDone) {
+      const dbPkgs = pkgs.map(p => ({
+        id: p.id,
+        name: p.name,
+        actual_price: p.actualPrice,
+        offer_price: p.offerPrice,
+        total_tests: p.totalTests,
+        tests: p.tests,
+        discount_badge: p.discountBadge,
+        description: p.description
+      }));
+      const { error } = await supabase.from('health_packages').upsert(dbPkgs);
+      if (error) console.error("Packages sync error:", error);
+    }
   };
 
   const wrappedSetTestimonials = async (tests: Testimonial[]) => {
     setTestimonials(tests);
-    if (supabase) await supabase.from('testimonials').upsert(tests);
+    if (supabase && isInitialLoadDone) {
+      const { error } = await supabase.from('testimonials').upsert(tests);
+      if (error) console.error("Testimonials sync error:", error);
+    }
   };
 
   const wrappedSetDepartments = async (depts: Department[]) => {
     setDepartments(depts);
-    if (supabase) await supabase.from('departments').upsert(depts);
+    if (supabase && isInitialLoadDone) {
+      const dbDepts = depts.map(d => ({
+        id: d.id,
+        name: d.name,
+        head_of_department: d.headOfDepartment,
+        description: d.description
+      }));
+      const { error } = await supabase.from('departments').upsert(dbDepts);
+      if (error) console.error("Departments sync error:", error);
+    }
   };
 
   const wrappedSetDocuments = async (docs: ClinicDocument[]) => {
     setDocuments(docs);
-    if (supabase) {
-      await supabase.from('clinic_documents').upsert(docs.map(d => ({
+    if (supabase && isInitialLoadDone) {
+      const dbFiles = docs.map(d => ({
         id: d.id,
         name: d.name,
         file_url: d.fileData,
         upload_date: d.uploadDate
-      })));
+      }));
+      const { error } = await supabase.from('clinic_documents').upsert(dbFiles);
+      if (error) console.error("Documents sync error:", error);
     }
   };
 
   const wrappedSetAppointments = async (newApps: Appointment[]) => {
     setAppointments(newApps);
-    if (supabase && newApps.length > 0) {
-      // Upsert the latest one or all (simple for now: just the first if it was an add)
-      const latestApp = newApps[0];
-      await supabase.from('appointments').upsert({
-        id: latestApp.id,
-        patient_name: latestApp.patientName,
-        patient_phone: latestApp.patientPhone,
-        patient_whatsapp: latestApp.patientWhatsapp,
-        patient_address: latestApp.patientAddress,
-        doctor_id: latestApp.doctorId,
-        date: latestApp.date,
-        time: latestApp.time,
-        status: latestApp.status,
-        type: latestApp.type,
-        is_home_collection: latestApp.isHomeCollection,
-        claim_offer: latestApp.claimOffer,
-        final_price: latestApp.finalPrice
-      });
+    if (supabase && isInitialLoadDone && newApps.length > 0) {
+      // For appointments, we might be adding or updating.
+      // Easiest is to upsert the entire current list OR the ones that are likely new/changed.
+      // Since it's usually small for a clinic, we'll upsert the whole array to be safe, 
+      // but only if it's manageable. 
+      const dbApps = newApps.map(a => ({
+        id: a.id,
+        patient_name: a.patientName,
+        patient_phone: a.patientPhone,
+        patient_whatsapp: a.patientWhatsapp,
+        patient_address: a.patientAddress,
+        doctor_id: a.doctorId,
+        date: a.date,
+        time: a.time,
+        status: a.status,
+        type: a.type,
+        is_home_collection: a.isHomeCollection,
+        claim_offer: a.claimOffer,
+        final_price: a.finalPrice
+      }));
+      const { error } = await supabase.from('appointments').upsert(dbApps);
+      if (error) console.error("Appointments sync error:", error);
     }
   };
 
@@ -237,7 +303,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppContext.Provider value={{ 
-      siteConfig, setSiteConfig, 
+      siteConfig, setSiteConfig: wrappedSetSiteConfig, 
       opdDoctors, setOpdDoctors: wrappedSetDoctors, 
       services, setServices, 
       appointments, setAppointments: wrappedSetAppointments,

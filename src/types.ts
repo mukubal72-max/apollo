@@ -13,6 +13,8 @@ export interface OPDDoctor {
   photo?: string; // Base64 or URL
   isAvailable: boolean;
   expiryDate?: string; // YYYY-MM-DD
+  fee?: number;
+  consultationTime?: string;
 }
 
 export interface Service {

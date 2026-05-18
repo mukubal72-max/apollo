@@ -45,7 +45,7 @@ function AppContent() {
       {/* Floating Action Buttons */}
       <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3 print:hidden">
         <a 
-          href={`https://wa.me/91${siteConfig.contact?.replace(/[^0-9]/g, '') || '9250877505'}`}
+          href={`https://wa.me/91${siteConfig.contact?.replace(/[^0-9]/g, '') || '8004055501'}`}
           target="_blank"
           rel="noreferrer"
           className="w-14 h-14 bg-green-500 text-white rounded-full shadow-2xl flex items-center justify-center border-4 border-white hover:scale-110 transition-all group"
