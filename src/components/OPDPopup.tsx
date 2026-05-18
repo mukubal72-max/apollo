@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Calendar, User, Stethoscope, Phone, ArrowLeft, CheckCircle2, ChevronRight } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { OPDDoctor } from '../types';
 
 export default function OPDPopup() {
@@ -28,6 +28,7 @@ export default function OPDPopup() {
     date: new Date().toISOString().split('T')[0],
     time: '10:00'
   });
+  const [dateError, setDateError] = useState('');
   const [isHomeCollection, setIsHomeCollection] = useState(false);
 
   const formatDate = (dateStr: string) => {
@@ -83,8 +84,56 @@ export default function OPDPopup() {
     window.open(whatsappUrl, '_blank');
   };
 
+  useEffect(() => {
+    if (selectedDoctor) {
+      if (selectedDoctor.availabilityType === 'visiting') {
+        setPatientData(prev => ({ ...prev, date: selectedDoctor.visitingDate }));
+      } else if (selectedDoctor.availabilityType === 'regular' && selectedDoctor.availableDays?.length) {
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        let current = new Date();
+        let found = false;
+        // Check next 30 days
+        for (let i = 0; i < 30; i++) {
+          const dayName = days[current.getDay()];
+          if (selectedDoctor.availableDays.includes(dayName)) {
+            setPatientData(prev => ({ ...prev, date: current.toISOString().split('T')[0] }));
+            found = true;
+            break;
+          }
+          current.setDate(current.getDate() + 1);
+        }
+      }
+    }
+  }, [selectedDoctor]);
+
+  const validateDate = (dateStr: string, doctor?: OPDDoctor | null) => {
+    if (!doctor || !dateStr) {
+      setDateError('');
+      return;
+    }
+
+    const date = new Date(dateStr);
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+
+    if (doctor.availabilityType === 'regular') {
+      if (!doctor.availableDays?.includes(dayName)) {
+        setDateError(`${doctor.name} is only available on ${doctor.availableDays?.join(', ')}.`);
+      } else {
+        setDateError('');
+      }
+    } else {
+      if (dateStr !== doctor.visitingDate) {
+        const formattedVisiting = new Date(doctor.visitingDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long' });
+        setDateError(`${doctor.name} is only visiting on ${formattedVisiting}.`);
+      } else {
+        setDateError('');
+      }
+    }
+  };
+
   const submitBooking = (e: React.FormEvent) => {
     e.preventDefault();
+    if (dateError && formStep === 2) return;
     if (formStep === 1) {
       setFormStep(2);
       return;
@@ -119,6 +168,7 @@ export default function OPDPopup() {
       setSelectedDoctor(null);
       setSelectedPackageId(null);
       setIsHomeCollection(false);
+      setDateError('');
       setPatientData({ 
         name: '', 
         phone: '', 
@@ -340,16 +390,49 @@ export default function OPDPopup() {
                               className="space-y-6"
                             >
                               <div className="grid md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                  <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Appointment Date</label>
-                                  <input 
-                                    required
-                                    type="date"
-                                    value={patientData.date}
-                                    onChange={(e) => setPatientData({...patientData, date: e.target.value})}
-                                    className="w-full py-4 px-6 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold"
-                                  />
-                                </div>
+                                  <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Appointment Date</label>
+                                    {selectedDoctor ? (
+                                      <select 
+                                        required
+                                        value={patientData.date}
+                                        onChange={(e) => setPatientData({...patientData, date: e.target.value})}
+                                        className="w-full py-4 px-6 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold appearance-none"
+                                      >
+                                        {selectedDoctor.availabilityType === 'visiting' ? (
+                                          <option value={selectedDoctor.visitingDate}>{formatDate(selectedDoctor.visitingDate)}</option>
+                                        ) : (
+                                          (() => {
+                                            const options = [];
+                                            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                                            let current = new Date();
+                                            // Show next 4 occurrences
+                                            while (options.length < 4) {
+                                              const dayName = days[current.getDay()];
+                                              if (selectedDoctor.availableDays?.includes(dayName)) {
+                                                const dateStr = current.toISOString().split('T')[0];
+                                                options.push(
+                                                  <option key={dateStr} value={dateStr}>
+                                                    {current.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', weekday: 'short' })}
+                                                  </option>
+                                                );
+                                              }
+                                              current.setDate(current.getDate() + 1);
+                                            }
+                                            return options;
+                                          })()
+                                        )}
+                                      </select>
+                                    ) : (
+                                      <input 
+                                        required
+                                        type="date"
+                                        value={patientData.date}
+                                        onChange={(e) => setPatientData({...patientData, date: e.target.value})}
+                                        className="w-full py-4 px-6 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold"
+                                      />
+                                    )}
+                                  </div>
                                 <div className="space-y-2">
                                   <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Time Slot</label>
                                   <select 

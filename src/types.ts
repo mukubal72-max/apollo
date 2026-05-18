@@ -6,6 +6,8 @@ export interface OPDDoctor {
   qualifications: string;
   experience: string;
   departmentId?: string;
+  availabilityType: 'regular' | 'visiting';
+  availableDays?: string[]; // ['Monday', 'Wednesday']
   visitingDate: string;
   location: string;
   photo?: string; // Base64 or URL

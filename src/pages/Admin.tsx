@@ -123,9 +123,12 @@ export default function Admin() {
       specialty: 'Specialty',
       qualifications: 'Qualification',
       experience: 'Experience (Years)',
-      visitingDate: 'Visiting Dates',
+      availabilityType: 'visiting',
+      availableDays: [],
+      visitingDate: new Date().toISOString().split('T')[0],
       location: 'At Basti Branch',
       isAvailable: true,
+      expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     };
     setOpdDoctors([newDoc, ...opdDoctors]);
   };
@@ -578,6 +581,68 @@ export default function Admin() {
                               ))}
                             </select>
                           </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-black text-slate-400">Availability Type</label>
+                            <select 
+                              value={doc.availabilityType || 'visiting'} 
+                              onChange={(e) => updateDoctor(doc.id, { availabilityType: e.target.value as any })}
+                              className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm"
+                            >
+                              <option value="visiting">Visiting (Specific Date)</option>
+                              <option value="regular">Regular (Weekly Days)</option>
+                            </select>
+                          </div>
+
+                          {doc.availabilityType === 'regular' ? (
+                            <div className="space-y-1 col-span-full">
+                              <label className="text-[10px] uppercase font-black text-slate-400">Available Days</label>
+                              <div className="flex flex-wrap gap-2 pt-1">
+                                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => {
+                                  const isSelected = doc.availableDays?.includes(day);
+                                  return (
+                                    <button
+                                      key={day}
+                                      onClick={() => {
+                                        const current = doc.availableDays || [];
+                                        const next = isSelected 
+                                          ? current.filter(d => d !== day)
+                                          : [...current, day];
+                                        updateDoctor(doc.id, { availableDays: next });
+                                      }}
+                                      className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border ${
+                                        isSelected 
+                                          ? 'bg-primary text-white border-primary shadow-md lg:scale-105' 
+                                          : 'bg-white text-slate-400 border-slate-200 hover:border-primary/50'
+                                      }`}
+                                    >
+                                      {day.slice(0, 3)}
+                                    </button>
+                                  );
+                                })}
+                               </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-1">
+                              <label className="text-[10px] uppercase font-black text-slate-400">Visiting Date</label>
+                              <input 
+                                type="date"
+                                value={doc.visitingDate} 
+                                onChange={(e) => updateDoctor(doc.id, { visitingDate: e.target.value })}
+                                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm"
+                              />
+                            </div>
+                          )}
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-black text-slate-400">Booking Deadline (Expiry Date)</label>
+                            <input 
+                              type="date"
+                              value={doc.expiryDate} 
+                              onChange={(e) => updateDoctor(doc.id, { expiryDate: e.target.value })}
+                              className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm"
+                            />
+                          </div>
+
                           <div className="space-y-1">
                             <label className="text-[10px] uppercase font-black text-slate-400">Specialty Area</label>
                             <input 

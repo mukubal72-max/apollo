@@ -14,6 +14,16 @@ export default function OPDPage() {
     return today > expiry;
   };
 
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    } catch {
+      return dateStr;
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 md:px-8 py-12 md:py-16">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 border-b border-slate-200 pb-6 gap-4">
@@ -99,7 +109,10 @@ export default function OPDPage() {
                         }}
                         className={`text-xs font-black uppercase tracking-tight px-3 py-1 rounded-full self-start ${expired ? 'bg-red-50 text-red-400 line-through blur-[1.5px]' : 'bg-slate-100 text-slate-700'}`}
                       >
-                        {doctor.visitingDate}
+                        {doctor.availabilityType === 'regular' 
+                          ? `Regular: ${doctor.availableDays?.map(d => d.substring(0,3)).join(', ')}`
+                          : formatDate(doctor.visitingDate)
+                        }
                       </motion.span>
                       <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1 opacity-70 italic px-3">{doctor.location}</span>
                     </div>
@@ -153,7 +166,7 @@ export default function OPDPage() {
               
               <div className="grid grid-cols-2 gap-4 py-4 border-y border-slate-50">
                 <div>
-                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Visiting Date</p>
+                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">{doctor.availabilityType === 'regular' ? 'Regular Schedule' : 'Visiting Date'}</p>
                   <motion.span 
                     animate={(doctor.isAvailable && !expired) ? {
                       opacity: [1, 0.4, 1],
@@ -166,7 +179,10 @@ export default function OPDPage() {
                     }}
                     className={`text-xs font-black uppercase ${expired ? 'text-red-400 line-through blur-[1px]' : 'text-slate-700'}`}
                   >
-                    {doctor.visitingDate}
+                    {doctor.availabilityType === 'regular' 
+                      ? doctor.availableDays?.map(d => d.slice(0,3)).join(', ')
+                      : formatDate(doctor.visitingDate)
+                    }
                   </motion.span>
                 </div>
                 <div>

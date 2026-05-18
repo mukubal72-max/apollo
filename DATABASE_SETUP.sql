@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS opd_doctors (
   qualifications TEXT,
   experience TEXT,
   department_id TEXT,
+  availability_type TEXT DEFAULT 'visiting',
+  available_days TEXT[],
   visiting_date TEXT,
   location TEXT,
   is_available BOOLEAN DEFAULT true,
