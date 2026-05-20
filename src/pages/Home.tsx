@@ -324,6 +324,7 @@ export default function Home() {
                       <div>
                         <h4 className="font-black text-slate-800 uppercase tracking-tight">{doc.specialty}</h4>
                         <p className="text-xs text-slate-500 font-bold opacity-60 uppercase mt-1">{doc.name}</p>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">₹{doc.fee || 600} • {doc.consultationTime || '10:00 AM - 02:00 PM'}</p>
                       </div>
                     </div>
                     <ChevronRight className="text-slate-300 group-hover:text-primary transition-colors" />

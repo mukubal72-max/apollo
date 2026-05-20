@@ -51,109 +51,131 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [documents, setDocuments] = useState<ClinicDocument[]>([]);
   const [isInitialLoadDone, setIsInitialLoadDone] = useState(false);
 
-  // Initial Load from Supabase
-  useEffect(() => {
-    async function loadData() {
-      if (!supabase) {
-        setIsInitialLoadDone(true);
-        return;
-      }
-      
-      try {
-        const [
-          { data: site, error: siteErr },
-          { data: docs, error: docsErr },
-          { data: pkgs, error: pkgsErr },
-          { data: apps, error: appsErr },
-          { data: tests, error: testsErr },
-          { data: depts, error: deptsErr },
-          { data: clinicFiles, error: docsFileErr }
-        ] = await Promise.all([
-          supabase.from('site_config').select('*').single(),
-          supabase.from('opd_doctors').select('*').order('created_at'),
-          supabase.from('health_packages').select('*').order('created_at'),
-          supabase.from('appointments').select('*').order('created_at', { ascending: false }),
-          supabase.from('testimonials').select('*').order('created_at'),
-          supabase.from('departments').select('*').order('created_at'),
-          supabase.from('clinic_documents').select('*').order('created_at')
-        ]);
-
-        if (siteErr && siteErr.code !== 'PGRST116') console.error("Site config load error:", siteErr);
-        if (docsErr) console.error("Doctors load error:", docsErr);
-        if (pkgsErr) console.error("Packages load error:", pkgsErr);
-        if (appsErr) console.error("Appointments load error:", appsErr);
-
-        if (site) setSiteConfig(site.config_data as SiteConfig);
-        if (docs && docs.length > 0) {
-          setOpdDoctors(docs.map(d => ({
-            id: d.id,
-            name: d.name,
-            specialty: d.specialty,
-            qualifications: d.qualifications,
-            experience: d.experience,
-            departmentId: d.department_id,
-            availabilityType: d.availability_type || 'visiting',
-            availableDays: d.available_days || [],
-            visitingDate: d.visiting_date,
-            location: d.location,
-            photo: d.photo,
-            isAvailable: d.is_available,
-            expiryDate: d.expiry_date,
-            fee: d.fee,
-            consultationTime: d.consultation_time
-          })));
-        }
-        if (pkgs && pkgs.length > 0) {
-          setHealthPackages(pkgs.map(p => ({
-            id: p.id,
-            name: p.name,
-            actualPrice: p.actual_price,
-            offerPrice: p.offer_price,
-            totalTests: p.total_tests,
-            tests: p.tests,
-            discountBadge: p.discount_badge,
-            description: p.description
-          })));
-        }
-        if (apps && apps.length > 0) {
-          setAppointments(apps.map(a => ({
-            id: a.id,
-            patientName: a.patient_name,
-            patientPhone: a.patient_phone,
-            patientWhatsapp: a.patient_whatsapp,
-            patientAddress: a.patient_address,
-            doctorId: a.doctor_id,
-            date: a.date,
-            time: a.time,
-            status: a.status,
-            type: a.type,
-            isHomeCollection: a.is_home_collection,
-            claimOffer: a.claim_offer,
-            finalPrice: Number(a.final_price) || 0
-          })));
-        }
-        if (tests && tests.length > 0) setTestimonials(tests);
-        if (depts && depts.length > 0) {
-          setDepartments(depts.map(d => ({
-            id: d.id,
-            name: d.name,
-            headOfDepartment: d.head_of_department,
-            description: d.description
-          })));
-        }
-        if (clinicFiles && clinicFiles.length > 0) setDocuments(clinicFiles.map(f => ({
-          id: f.id,
-          name: f.name,
-          fileData: f.file_url,
-          uploadDate: f.upload_date
-        })));
-      } catch (e) {
-        console.error("Supabase load exception:", e);
-      } finally {
-        setIsInitialLoadDone(true);
-      }
+  // Initial Load & Sync from Supabase
+  const loadData = async () => {
+    if (!supabase) {
+      setIsInitialLoadDone(true);
+      return;
     }
+    
+    try {
+      const [
+        { data: site, error: siteErr },
+        { data: docs, error: docsErr },
+        { data: pkgs, error: pkgsErr },
+        { data: apps, error: appsErr },
+        { data: tests, error: testsErr },
+        { data: depts, error: deptsErr },
+        { data: clinicFiles, error: docsFileErr }
+      ] = await Promise.all([
+        supabase.from('site_config').select('*').single(),
+        supabase.from('opd_doctors').select('*').order('created_at'),
+        supabase.from('health_packages').select('*').order('created_at'),
+        supabase.from('appointments').select('*').order('created_at', { ascending: false }),
+        supabase.from('testimonials').select('*').order('created_at'),
+        supabase.from('departments').select('*').order('created_at'),
+        supabase.from('clinic_documents').select('*').order('created_at')
+      ]);
+
+      if (siteErr && siteErr.code !== 'PGRST116') console.error("Site config load error:", siteErr);
+      if (docsErr) console.error("Doctors load error:", docsErr);
+      if (pkgsErr) console.error("Packages load error:", pkgsErr);
+      if (appsErr) console.error("Appointments load error:", appsErr);
+
+      if (site) setSiteConfig(site.config_data as SiteConfig);
+      if (docs && docs.length > 0) {
+        setOpdDoctors(docs.map(d => ({
+          id: d.id,
+          name: d.name,
+          specialty: d.specialty,
+          qualifications: d.qualifications,
+          experience: d.experience,
+          departmentId: d.department_id,
+          availabilityType: d.availability_type || 'visiting',
+          availableDays: d.available_days || [],
+          visitingDate: d.visiting_date,
+          location: d.location,
+          photo: d.photo,
+          isAvailable: d.is_available,
+          expiryDate: d.expiry_date,
+          fee: d.fee,
+          consultationTime: d.consultation_time
+        })));
+      }
+      if (pkgs && pkgs.length > 0) {
+        setHealthPackages(pkgs.map(p => ({
+          id: p.id,
+          name: p.name,
+          actualPrice: p.actual_price,
+          offerPrice: p.offer_price,
+          totalTests: p.total_tests,
+          tests: p.tests,
+          discountBadge: p.discount_badge,
+          description: p.description
+        })));
+      }
+      if (apps && apps.length > 0) {
+        setAppointments(apps.map(a => ({
+          id: a.id,
+          patientName: a.patient_name,
+          patientPhone: a.patient_phone,
+          patientWhatsapp: a.patient_whatsapp,
+          patientAddress: a.patient_address,
+          doctorId: a.doctor_id,
+          date: a.date,
+          time: a.time,
+          status: a.status,
+          type: a.type,
+          isHomeCollection: a.is_home_collection,
+          claimOffer: a.claim_offer,
+          finalPrice: Number(a.final_price) || 0
+        })));
+      }
+      if (tests && tests.length > 0) setTestimonials(tests);
+      if (depts && depts.length > 0) {
+        setDepartments(depts.map(d => ({
+          id: d.id,
+          name: d.name,
+          headOfDepartment: d.head_of_department,
+          description: d.description
+        })));
+      }
+      if (clinicFiles && clinicFiles.length > 0) setDocuments(clinicFiles.map(f => ({
+        id: f.id,
+        name: f.name,
+        fileData: f.file_url,
+        uploadDate: f.upload_date
+      })));
+    } catch (e) {
+      console.error("Supabase load exception:", e);
+    } finally {
+      setIsInitialLoadDone(true);
+    }
+  };
+
+  useEffect(() => {
     loadData();
+
+    // Focus handler for auto-refresh (if not on administrative panel)
+    const handleFocus = () => {
+      if (!window.location.pathname.toLowerCase().includes('/admin')) {
+        loadData();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+
+    // Dynamic poll interval
+    const interval = setInterval(() => {
+      if (!window.location.pathname.toLowerCase().includes('/admin')) {
+        loadData();
+      }
+    }, 10000);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(interval);
+    };
   }, []);
 
   // Use a wrapped setter for siteConfig to avoid auto-sync during load

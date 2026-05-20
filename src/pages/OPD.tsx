@@ -91,6 +91,10 @@ export default function OPDPage() {
                         {doctor.name}
                       </h4>
                       <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{doctor.qualifications}</p>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <span className="text-[9px] font-black uppercase text-secondary bg-secondary/15 px-2.5 py-1 rounded bg-opacity-70">₹{doctor.fee || 600} Fee</span>
+                        <span className="text-[9px] font-black uppercase text-slate-500 bg-slate-100 px-2.5 py-1 rounded">{doctor.consultationTime || '10:00 AM - 02:00 PM'}</span>
+                      </div>
                     </div>
                   </td>
                   <td className="p-6">
@@ -157,6 +161,11 @@ export default function OPDPage() {
                   <div>
                     <h4 className="font-black text-primary uppercase tracking-tight text-lg leading-tight">{doctor.specialty}</h4>
                     <p className="text-xs font-black text-slate-900 uppercase tracking-tight mt-1">{doctor.name}</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{doctor.qualifications}</p>
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      <span className="text-[8px] font-black uppercase text-secondary bg-secondary/15 px-2 py-0.5 rounded">₹{doctor.fee || 600} Fee</span>
+                      <span className="text-[8px] font-black uppercase text-slate-500 bg-slate-100 px-2 py-0.5 rounded">{doctor.consultationTime || '10:00 AM - 02:00 PM'}</span>
+                    </div>
                   </div>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${(doctor.isAvailable && !expired) ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-400'}`}>

@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { Plus, Trash2, Settings, Users, Activity, Lock, Upload, Image as ImageIcon, Calendar, Check, X, Phone, User, Clock, Shield, FlaskConical, FileText, MessageCircle } from 'lucide-react';
+import { Plus, Trash2, Edit, Settings, Users, Activity, Lock, Upload, Image as ImageIcon, Calendar, Check, X, Phone, User, Clock, Shield, FlaskConical, FileText, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { OPDDoctor, Appointment, Testimonial, Department, HealthPackage, ClinicDocument } from '../types';
 
@@ -30,12 +30,21 @@ export default function Admin() {
 
   const [savingStatus, setSavingStatus] = useState<{[key: string]: boolean}>({});
 
+  const [activeAppointmentForm, setActiveAppointmentForm] = useState<Partial<Appointment> | null>(null);
+
   const [promoEdit, setPromoEdit] = useState(siteConfig.promotionPopup || {
     enabled: true,
     title: "10% OFF ON HOME COLLECTION",
     description: "Book any health checkup package today and get an additional 10% FLAT discount on home sample collection services in Basti.",
     offerText: "10% off"
   });
+
+  // Synchronize promoEdit with siteConfig when it loads
+  useEffect(() => {
+    if (siteConfig.promotionPopup) {
+      setPromoEdit(siteConfig.promotionPopup);
+    }
+  }, [siteConfig.promotionPopup]);
 
   const triggerSave = async (tab: string, saveData: () => Promise<void> | void) => {
     setSavingStatus({ ...savingStatus, [tab]: true });
@@ -795,26 +804,26 @@ export default function Admin() {
                     </button>
                     <button 
                       onClick={() => {
-                      const name = prompt('Patient Name:');
-                      const phone = prompt('Patient Phone:');
-                      const date = prompt('Appointment Date (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
-                      const docId = opdDoctors[0]?.id;
-                      if(name && phone && date && docId) {
-                        setAppointments([{
-                          id: Date.now().toString(),
-                          patientName: name,
-                          patientPhone: phone,
-                          doctorId: docId,
-                          date: date,
-                          status: 'confirmed',
-                          type: 'doctor'
-                        }, ...appointments]);
-                      }
-                    }}
-                    className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-xl font-bold shadow-md hover:scale-105 transition-all text-xs uppercase"
-                  >
-                    <Plus size={18} /> New Appointment
-                  </button>
+                        setActiveAppointmentForm({
+                          id: undefined,
+                          patientName: '',
+                          patientPhone: '',
+                          patientWhatsapp: '',
+                          patientAddress: '',
+                          doctorId: opdDoctors[0]?.id || '',
+                          date: new Date().toISOString().split('T')[0],
+                          time: '11:00 AM',
+                          status: 'pending',
+                          type: 'doctor',
+                          isHomeCollection: false,
+                          claimOffer: false,
+                          finalPrice: opdDoctors[0]?.fee || 600
+                        });
+                      }}
+                      className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-xl font-bold shadow-md hover:scale-105 transition-all text-xs uppercase"
+                    >
+                      <Plus size={18} /> New Appointment
+                    </button>
                 </div>
               </div>
 
@@ -963,6 +972,13 @@ export default function Admin() {
                                   title="Cancel"
                                 >
                                   <X size={16} />
+                                </button>
+                                <button 
+                                  onClick={() => setActiveAppointmentForm(app)}
+                                  className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all"
+                                  title="Edit Appointment"
+                                >
+                                  <Edit size={16} />
                                 </button>
                                 <button 
                                   onClick={() => deleteAppointment(app.id)}
@@ -1448,6 +1464,261 @@ export default function Admin() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {activeAppointmentForm && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+              <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-xl border border-slate-100 p-8 flex flex-col relative max-h-[90vh]">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                      {activeAppointmentForm.id ? 'Edit Appointment' : 'New Appointment'}
+                    </h3>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1 font-mono">Basti Clinic Registry System</p>
+                  </div>
+                  <button 
+                    onClick={() => setActiveAppointmentForm(null)}
+                    className="p-3 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-900 transition-all"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="flex-grow overflow-y-auto space-y-4 pr-1">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Patient Name *</label>
+                    <input 
+                      type="text"
+                      required
+                      value={activeAppointmentForm.patientName || ''}
+                      onChange={(e) => setActiveAppointmentForm({ ...activeAppointmentForm, patientName: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-primary rounded-xl outline-none font-medium text-sm transition-all text-slate-800"
+                      placeholder="Name of patient"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Mobile Phone *</label>
+                      <input 
+                        type="tel"
+                        required
+                        value={activeAppointmentForm.patientPhone || ''}
+                        onChange={(e) => setActiveAppointmentForm({ ...activeAppointmentForm, patientPhone: e.target.value })}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-primary rounded-xl outline-none font-medium text-sm transition-all text-slate-800"
+                        placeholder="e.g. 8004055501"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">WhatsApp Phone</label>
+                      <input 
+                        type="tel"
+                        value={activeAppointmentForm.patientWhatsapp || ''}
+                        onChange={(e) => setActiveAppointmentForm({ ...activeAppointmentForm, patientWhatsapp: e.target.value })}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-primary rounded-xl outline-none font-medium text-sm transition-all text-slate-800"
+                        placeholder="Leave blank to sync phone"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Patient Address</label>
+                    <input 
+                      type="text"
+                      value={activeAppointmentForm.patientAddress || ''}
+                      onChange={(e) => setActiveAppointmentForm({ ...activeAppointmentForm, patientAddress: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-primary rounded-xl outline-none font-medium text-sm transition-all text-slate-800"
+                      placeholder="Basti, UP"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Appointment Type</label>
+                      <select 
+                        value={activeAppointmentForm.type || 'doctor'}
+                        onChange={(e) => {
+                          const type = e.target.value as 'doctor' | 'package';
+                          const firstId = type === 'package' ? (healthPackages[0]?.id || '') : (opdDoctors[0]?.id || '');
+                          const defaultPrice = type === 'package' 
+                            ? (healthPackages[0]?.offerPrice || 0) 
+                            : (opdDoctors[0]?.fee || 600);
+                          setActiveAppointmentForm({ 
+                            ...activeAppointmentForm, 
+                            type, 
+                            doctorId: firstId, 
+                            finalPrice: defaultPrice 
+                          });
+                        }}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-primary rounded-xl outline-none font-medium text-sm transition-all text-slate-800"
+                      >
+                        <option value="doctor">OPD Doctor Consultation</option>
+                        <option value="package">Health Checkup Package</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">
+                        Select {activeAppointmentForm.type === 'package' ? 'Package' : 'Doctor Specialist'}
+                      </label>
+                      <select 
+                        value={activeAppointmentForm.doctorId || ''}
+                        onChange={(e) => {
+                          const selectedId = e.target.value;
+                          let price = 0;
+                          if (activeAppointmentForm.type === 'package') {
+                            const pkg = healthPackages.find(p => p.id === selectedId);
+                            price = pkg?.offerPrice || pkg?.actualPrice || 0;
+                          } else {
+                            const doc = opdDoctors.find(d => d.id === selectedId);
+                            price = doc?.fee || 600;
+                          }
+                          setActiveAppointmentForm({ 
+                            ...activeAppointmentForm, 
+                            doctorId: selectedId,
+                            finalPrice: price
+                          });
+                        }}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-primary rounded-xl outline-none font-medium text-sm transition-all text-slate-800"
+                      >
+                        {activeAppointmentForm.type === 'package' ? (
+                          healthPackages.map(p => (
+                            <option key={p.id} value={p.id}>{p.name} (₹{p.offerPrice || p.actualPrice})</option>
+                          ))
+                        ) : (
+                          opdDoctors.map(d => (
+                            <option key={d.id} value={d.id}>{d.specialty} - {d.name} (Fee: ₹{d.fee || 600})</option>
+                          ))
+                        )}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Appointment Date</label>
+                      <input 
+                        type="date"
+                        required
+                        value={activeAppointmentForm.date || ''}
+                        onChange={(e) => setActiveAppointmentForm({ ...activeAppointmentForm, date: e.target.value })}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-primary rounded-xl outline-none font-medium text-sm transition-all text-slate-800"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Appointment Time / Slot</label>
+                      <input 
+                        type="text"
+                        value={activeAppointmentForm.time || ''}
+                        onChange={(e) => setActiveAppointmentForm({ ...activeAppointmentForm, time: e.target.value })}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-primary rounded-xl outline-none font-medium text-sm transition-all text-slate-800"
+                        placeholder="e.g. 11:30 AM"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Total Pricing Amount</label>
+                      <input 
+                        type="number"
+                        value={activeAppointmentForm.finalPrice || 0}
+                        onChange={(e) => setActiveAppointmentForm({ ...activeAppointmentForm, finalPrice: Number(e.target.value) })}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-primary rounded-xl outline-none font-medium text-sm transition-all text-slate-800"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Billing Status</label>
+                      <select 
+                        value={activeAppointmentForm.status || 'pending'}
+                        onChange={(e) => setActiveAppointmentForm({ ...activeAppointmentForm, status: e.target.value as any })}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-primary rounded-xl outline-none font-medium text-sm transition-all text-slate-800"
+                      >
+                        <option value="pending">Pending Review</option>
+                        <option value="confirmed">Confirmed / Paid</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-6 mt-2 py-2">
+                    {activeAppointmentForm.type === 'package' && (
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input 
+                          type="checkbox"
+                          checked={!!activeAppointmentForm.isHomeCollection}
+                          onChange={(e) => setActiveAppointmentForm({ ...activeAppointmentForm, isHomeCollection: e.target.checked })}
+                          className="w-4 h-4 text-primary bg-slate-100 border-slate-200 rounded focus:ring-primary focus:ring-2"
+                        />
+                        <span className="text-xs text-slate-600 font-bold uppercase tracking-tight">Home Blood Collection</span>
+                      </label>
+                    )}
+
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input 
+                        type="checkbox"
+                        checked={!!activeAppointmentForm.claimOffer}
+                        onChange={(e) => setActiveAppointmentForm({ ...activeAppointmentForm, claimOffer: e.target.checked })}
+                        className="w-4 h-4 text-primary bg-slate-100 border-slate-200 rounded focus:ring-primary focus:ring-2"
+                      />
+                      <span className="text-xs text-slate-600 font-bold uppercase tracking-tight">Claim Promotional Offer</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 justify-end mt-8 border-t border-slate-100 pt-6">
+                  <button 
+                    onClick={() => setActiveAppointmentForm(null)}
+                    className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-500 font-black text-xs uppercase tracking-widest rounded-xl transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={() => {
+                      if (!activeAppointmentForm.patientName || !activeAppointmentForm.patientPhone || !activeAppointmentForm.doctorId || !activeAppointmentForm.date) {
+                        alert("Please fill in core Patient Details: Name, Phone, Doctor/Package and Date.");
+                        return;
+                      }
+
+                      const isEditing = !!activeAppointmentForm.id;
+                      const targetId = activeAppointmentForm.id || "manual_" + Date.now().toString();
+
+                      const completeRecord: Appointment = {
+                        id: targetId,
+                        patientName: activeAppointmentForm.patientName,
+                        patientPhone: activeAppointmentForm.patientPhone,
+                        patientWhatsapp: activeAppointmentForm.patientWhatsapp || activeAppointmentForm.patientPhone,
+                        patientAddress: activeAppointmentForm.patientAddress || '',
+                        doctorId: activeAppointmentForm.doctorId,
+                        date: activeAppointmentForm.date,
+                        time: activeAppointmentForm.time || '11:00 AM',
+                        status: activeAppointmentForm.status || 'pending',
+                        type: activeAppointmentForm.type || 'doctor',
+                        isHomeCollection: !!activeAppointmentForm.isHomeCollection,
+                        claimOffer: !!activeAppointmentForm.claimOffer,
+                        finalPrice: Number(activeAppointmentForm.finalPrice) || 0
+                      };
+
+                      let updatedList = [];
+                      if (isEditing) {
+                        updatedList = appointments.map(a => a.id === targetId ? completeRecord : a);
+                      } else {
+                        updatedList = [completeRecord, ...appointments];
+                      }
+
+                      setAppointments(updatedList);
+                      setActiveAppointmentForm(null);
+
+                      // Trigger immediate sync
+                      triggerSave('appointments', async () => {});
+                    }}
+                    className="px-8 py-3 bg-primary text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-md hover:scale-105 transition-all"
+                  >
+                    {activeAppointmentForm.id ? 'Save & Sync Changes' : 'Confirm Appointment'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </div>
