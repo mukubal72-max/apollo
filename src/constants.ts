@@ -54,7 +54,7 @@ export const INITIAL_SERVICES: Service[] = [
 
 export const INITIAL_OPD_SCHEDULE: OPDDoctor[] = [
   {
-    id: "1",
+    id: "3da4b9a1-8ea2-47d3-9bc4-e12345678901",
     name: "Dr. Sundeep Upadhyay",
     specialty: "Joint Pain and Rheumatic Disorders",
     qualifications: "D.M. (Rheumatology)",
@@ -68,7 +68,7 @@ export const INITIAL_OPD_SCHEDULE: OPDDoctor[] = [
     consultationTime: "11:00 AM - 03:00 PM"
   },
   {
-    id: "2",
+    id: "3da4b9a1-8ea2-47d3-9bc4-e12345678902",
     name: "Dr. Shubhadeep Paul",
     specialty: "Endocrinology",
     qualifications: "D.M. (Endocrinology)",
@@ -82,7 +82,7 @@ export const INITIAL_OPD_SCHEDULE: OPDDoctor[] = [
     consultationTime: "10:00 AM - 02:00 PM"
   },
   {
-    id: "3",
+    id: "3da4b9a1-8ea2-47d3-9bc4-e12345678903",
     name: "Dr. Shahzad Alam",
     specialty: "Kidney Diseases & Transplant",
     qualifications: "D.M. (Nephrologist)",
@@ -96,7 +96,7 @@ export const INITIAL_OPD_SCHEDULE: OPDDoctor[] = [
     consultationTime: "10:00 AM - 02:00 PM"
   },
   {
-    id: "4",
+    id: "3da4b9a1-8ea2-47d3-9bc4-e12345678904",
     name: "Dr. A.K. Jain",
     specialty: "Cancer Care (Oncology)",
     qualifications: "M.D., D.M. (Oncology)",
@@ -110,7 +110,7 @@ export const INITIAL_OPD_SCHEDULE: OPDDoctor[] = [
     consultationTime: "09:00 AM - 01:00 PM"
   },
   {
-    id: "5",
+    id: "3da4b9a1-8ea2-47d3-9bc4-e12345678905",
     name: "Dr. Ritu Singh",
     specialty: "ENT (Ear, Nose, Throat)",
     qualifications: "M.S. (ENT)",
@@ -124,7 +124,7 @@ export const INITIAL_OPD_SCHEDULE: OPDDoctor[] = [
     consultationTime: "10:00 AM - 04:00 PM"
   },
   {
-    id: "6",
+    id: "3da4b9a1-8ea2-47d3-9bc4-e12345678906",
     name: "Dr. Sameer Gupta",
     specialty: "Dentistry",
     qualifications: "M.D.S. (Orthodontist)",
@@ -138,7 +138,7 @@ export const INITIAL_OPD_SCHEDULE: OPDDoctor[] = [
     consultationTime: "10:30 AM - 06:30 PM"
   },
   {
-    id: "7",
+    id: "3da4b9a1-8ea2-47d3-9bc4-e12345678907",
     name: "Dr. Vijay Pratap",
     specialty: "Critical Care",
     qualifications: "M.D. (Anesthesia & Critical Care)",
@@ -155,13 +155,13 @@ export const INITIAL_OPD_SCHEDULE: OPDDoctor[] = [
 
 export const INITIAL_TESTIMONIALS: Testimonial[] = [
   {
-    id: "1",
+    id: "6ef4b1c2-9da2-4b21-8ecb-999999111111",
     name: "Ramesh Kumar",
     rating: 5,
     review: "Excellent service and very knowledgeable doctors. The diagnostic facilities in Basti branch are top-notch.",
   },
   {
-    id: "2",
+    id: "6ef4b1c2-9da2-4b21-8ecb-999999222222",
     name: "Suman Singh",
     rating: 5,
     review: "Convenient scheduling and very friendly staff. I didn't have to travel to Lucknow for my checkup.",
@@ -170,25 +170,25 @@ export const INITIAL_TESTIMONIALS: Testimonial[] = [
 
 export const INITIAL_DEPARTMENTS: Department[] = [
   {
-    id: '1',
+    id: 'a90e3cd1-90fa-40ca-9e0c-111111111111',
     name: 'Rheumatology',
     headOfDepartment: 'Dr. Sundeep Upadhyay',
     description: 'Expertise in joint pains, arthritis, and autoimmune disorders.'
   },
   {
-    id: '2',
+    id: 'a90e3cd1-90fa-40ca-9e0c-222222222222',
     name: 'Endocrinology',
     headOfDepartment: 'Dr. Shubhadeep Paul',
     description: 'Specialized care for diabetes, thyroid, and metabolic health.'
   },
   {
-    id: '3',
+    id: 'a90e3cd1-90fa-40ca-9e0c-333333333333',
     name: 'Nephrology',
     headOfDepartment: 'Dr. Shahzad Alam',
     description: 'Advanced kidney care, dialysis, and transplant support.'
   },
   {
-    id: '4',
+    id: 'a90e3cd1-90fa-40ca-9e0c-444444444444',
     name: 'Oncology',
     headOfDepartment: 'Dr. A.K. Jain',
     description: 'Early screening, diagnosis, and oncology consultations.'
@@ -197,30 +197,33 @@ export const INITIAL_DEPARTMENTS: Department[] = [
 
 export const INITIAL_HEALTH_PACKAGES: HealthPackage[] = [
   {
-    id: 'hp1',
+    id: 'e123fcbe-8067-4d82-8bc1-111111111111',
     name: 'Apollo Primary Health Check UP',
     actualPrice: 2721,
     offerPrice: 1499,
     totalTests: 68,
     tests: ['CBC', 'LFT', 'KFT', 'Urine Routine', 'Sugar Fasting', 'Lipid Profile', 'ESR', 'TSH', 'Blood Pressure'],
     discountBadge: '10% Discount on Home collection',
+    description: 'Basic full-body checkup package.',
   },
   {
-    id: 'hp2',
+    id: 'e123fcbe-8067-4d82-8bc1-222222222222',
     name: 'Apollo Whole Body Health Check UP',
     actualPrice: 4228,
     offerPrice: 2099,
     totalTests: 80,
     tests: ['CBC', 'Sugar Fasting', 'Urine R/M', 'Lipid Profile', 'LFT', 'KFT', 'Blood Pressure', 'Calcium', 'HbA1c', 'ECG', 'ESR', 'Sodium', 'Potassium', 'Chloride', 'Thyroid Profile'],
     discountBadge: '10% Discount on Home collection',
+    description: 'Comprehensive whole-body checkup package.',
   },
   {
-    id: 'hp3',
+    id: 'e123fcbe-8067-4d82-8bc1-333333333333',
     name: 'Apollo Executive Health Check UP',
     actualPrice: 6625,
     offerPrice: 3299,
     totalTests: 90,
     tests: ['CBC', 'LFT', 'KFT', 'Urine Routine', 'Sugar Fasting', 'Calcium', 'Lipid Profile', 'OPD Consultation', 'Sodium', 'Vitamin B12', 'Vitamin D, 25-Hydroxy', 'ECG', 'HbA1c', 'Potassium', 'Chloride', 'Blood Pressure', 'ESR'],
     discountBadge: '10% Discount on Home collection',
+    description: 'Advanced executive health screening with doctor consultation.',
   }
 ];

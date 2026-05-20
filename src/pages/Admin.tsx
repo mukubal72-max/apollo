@@ -3,6 +3,7 @@ import { useAppContext } from '../context/AppContext';
 import { Plus, Trash2, Edit, Settings, Users, Activity, Lock, Upload, Image as ImageIcon, Calendar, Check, X, Phone, User, Clock, Shield, FlaskConical, FileText, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { OPDDoctor, Appointment, Testimonial, Department, HealthPackage, ClinicDocument } from '../types';
+import { generateUUID } from '../lib/supabase';
 
 export default function Admin() {
   const { 
@@ -127,7 +128,7 @@ export default function Admin() {
   // Doctor Management
   const addDoctor = () => {
     const newDoc: OPDDoctor = {
-      id: Date.now().toString(),
+      id: generateUUID(),
       name: 'New Doctor',
       specialty: 'Specialty',
       qualifications: 'Qualification',
@@ -145,7 +146,7 @@ export default function Admin() {
   };
 
   const updateDoctor = (id: string, updates: Partial<OPDDoctor>) => {
-    setOpdDoctors(opdDoctors.map(doc => doc.id === id ? { ...doc, ...updates } : doc));
+    setOpdDoctors(opdDoctors.map(doc => doc.id === id ? { ...doc, ...updates } : doc), false);
   };
 
   const deleteDoctor = async (id: string) => {
@@ -200,7 +201,7 @@ export default function Admin() {
   // Testimonial Management
   const addTestimonial = () => {
     const newTest: Testimonial = {
-      id: Date.now().toString(),
+      id: generateUUID(),
       name: 'Patient Name',
       rating: 5,
       review: 'Write your review here...',
@@ -209,7 +210,7 @@ export default function Admin() {
   };
 
   const updateTestimonial = (id: string, updates: Partial<Testimonial>) => {
-    setTestimonials(testimonials.map(t => t.id === id ? { ...t, ...updates } : t));
+    setTestimonials(testimonials.map(t => t.id === id ? { ...t, ...updates } : t), false);
   };
 
   const deleteTestimonial = async (id: string) => {
@@ -221,7 +222,7 @@ export default function Admin() {
   // Department Management
   const addDepartment = () => {
     const newDept: Department = {
-      id: Date.now().toString(),
+      id: generateUUID(),
       name: 'New Department',
       headOfDepartment: 'HOD Name',
       description: 'Department description...'
@@ -230,7 +231,7 @@ export default function Admin() {
   };
 
   const updateDepartment = (id: string, updates: Partial<Department>) => {
-    setDepartments(departments.map(d => d.id === id ? { ...d, ...updates } : d));
+    setDepartments(departments.map(d => d.id === id ? { ...d, ...updates } : d), false);
   };
 
   const deleteDepartment = async (id: string) => {
@@ -242,7 +243,7 @@ export default function Admin() {
   // Health Package Management
   const addHealthPackage = () => {
     const newPkg: HealthPackage = {
-      id: Date.now().toString(),
+      id: generateUUID(),
       name: 'New Health Package',
       actualPrice: 0,
       offerPrice: 0,
@@ -253,7 +254,7 @@ export default function Admin() {
   };
 
   const updateHealthPackage = (id: string, updates: Partial<HealthPackage>) => {
-    setHealthPackages(healthPackages.map(hp => hp.id === id ? { ...hp, ...updates } : hp));
+    setHealthPackages(healthPackages.map(hp => hp.id === id ? { ...hp, ...updates } : hp), false);
   };
 
   const deleteHealthPackage = async (id: string) => {
@@ -273,7 +274,7 @@ export default function Admin() {
       const reader = new FileReader();
       reader.onloadend = () => {
         const newDoc: ClinicDocument = {
-          id: Date.now().toString(),
+          id: generateUUID(),
           name: file.name,
           fileData: reader.result as string,
           uploadDate: new Date().toLocaleDateString(),
@@ -510,7 +511,7 @@ export default function Admin() {
                       <label className="text-xs font-black uppercase text-slate-400">Clinic Name</label>
                       <input 
                         value={siteConfig.name}
-                        onChange={(e) => setSiteConfig({ ...siteConfig, name: e.target.value })}
+                        onChange={(e) => setSiteConfig({ ...siteConfig, name: e.target.value }, false)}
                         className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
                       />
                     </div>
@@ -518,7 +519,7 @@ export default function Admin() {
                       <label className="text-xs font-black uppercase text-slate-400">Location Display</label>
                       <input 
                         value={siteConfig.location}
-                        onChange={(e) => setSiteConfig({ ...siteConfig, location: e.target.value })}
+                        onChange={(e) => setSiteConfig({ ...siteConfig, location: e.target.value }, false)}
                         className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
                       />
                     </div>
@@ -526,7 +527,7 @@ export default function Admin() {
                       <label className="text-xs font-black uppercase text-slate-400">Emergency Contact</label>
                       <input 
                         value={siteConfig.contact}
-                        onChange={(e) => setSiteConfig({ ...siteConfig, contact: e.target.value })}
+                        onChange={(e) => setSiteConfig({ ...siteConfig, contact: e.target.value }, false)}
                         className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
                       />
                     </div>
@@ -534,7 +535,7 @@ export default function Admin() {
                       <label className="text-xs font-black uppercase text-slate-400">Public Email</label>
                       <input 
                         value={siteConfig.email}
-                        onChange={(e) => setSiteConfig({ ...siteConfig, email: e.target.value })}
+                        onChange={(e) => setSiteConfig({ ...siteConfig, email: e.target.value }, false)}
                         className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
                       />
                     </div>
@@ -542,7 +543,7 @@ export default function Admin() {
                   
                   <div className="pt-8 border-t border-slate-100 flex justify-end">
                     <button 
-                      onClick={() => triggerSave('site', () => {})}
+                      onClick={() => triggerSave('site', () => setSiteConfig(siteConfig, true))}
                       className="bg-primary text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-all"
                     >
                       {savingStatus['site'] ? 'Successfully Saved' : 'Save Configuration'}
@@ -776,7 +777,7 @@ export default function Admin() {
                 
                 <div className="mt-12 pt-8 border-t border-slate-200 flex justify-end">
                   <button 
-                    onClick={() => triggerSave('doctors', () => {})}
+                    onClick={() => triggerSave('doctors', () => setOpdDoctors(opdDoctors, true))}
                     className="bg-primary text-white px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-all"
                   >
                     {savingStatus['doctors'] ? 'Successfully Synced' : 'Sync All Doctor Data'}
@@ -999,7 +1000,7 @@ export default function Admin() {
                 <div className="mt-12 pt-8 border-t border-slate-100 flex justify-between items-center print:hidden">
                   <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Patient Records Management System</p>
                   <button 
-                    onClick={() => triggerSave('appointments', () => {})}
+                    onClick={() => triggerSave('appointments', () => setAppointments(appointments, true))}
                     className="bg-primary text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-all"
                   >
                     {savingStatus['appointments'] ? 'Status Updated' : 'Sync All Statuses'}
@@ -1061,6 +1062,15 @@ export default function Admin() {
                       </button>
                     </div>
                   ))}
+                </div>
+                
+                <div className="mt-12 pt-8 border-t border-slate-100 flex justify-end">
+                  <button 
+                    onClick={() => triggerSave('departments', () => setDepartments(departments, true))}
+                    className="bg-primary text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-all text-xs"
+                  >
+                    {savingStatus['departments'] ? 'Successfully Saved' : 'Save Departments'}
+                  </button>
                 </div>
               </motion.div>
             )}
@@ -1151,7 +1161,7 @@ export default function Admin() {
                 
                 <div className="mt-12 pt-8 border-t border-slate-200 flex justify-end">
                   <button 
-                    onClick={() => triggerSave('checkups', () => {})}
+                    onClick={() => triggerSave('checkups', () => setHealthPackages(healthPackages, true))}
                     className="bg-primary text-white px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-all"
                   >
                     {savingStatus['checkups'] ? 'Successfully Published' : 'Publish Package Updates'}
@@ -1352,6 +1362,15 @@ export default function Admin() {
                       </div>
                     </div>
                   ))}
+                </div>
+                
+                <div className="mt-12 pt-8 border-t border-slate-250 flex justify-end">
+                  <button 
+                    onClick={() => triggerSave('testimonials', () => setTestimonials(testimonials, true))}
+                    className="bg-primary text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-all text-xs"
+                  >
+                    {savingStatus['testimonials'] ? 'Successfully Saved' : 'Save Patient Reviews'}
+                  </button>
                 </div>
               </motion.div>
             )}
@@ -1680,7 +1699,7 @@ export default function Admin() {
                       }
 
                       const isEditing = !!activeAppointmentForm.id;
-                      const targetId = activeAppointmentForm.id || "manual_" + Date.now().toString();
+                      const targetId = activeAppointmentForm.id || generateUUID();
 
                       const completeRecord: Appointment = {
                         id: targetId,
@@ -1705,11 +1724,11 @@ export default function Admin() {
                         updatedList = [completeRecord, ...appointments];
                       }
 
-                      setAppointments(updatedList);
+                      setAppointments(updatedList, false);
                       setActiveAppointmentForm(null);
 
                       // Trigger immediate sync
-                      triggerSave('appointments', async () => {});
+                      triggerSave('appointments', () => setAppointments(updatedList, true));
                     }}
                     className="px-8 py-3 bg-primary text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-md hover:scale-105 transition-all"
                   >

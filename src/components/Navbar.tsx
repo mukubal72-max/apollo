@@ -59,12 +59,12 @@ export default function Navbar() {
 
           {/* Contact Icons Section */}
           <div className="hidden lg:flex items-center gap-0 font-bold text-[#007a8e]">
-            <a href="tel:8004055501" className="flex items-center gap-2 hover:text-[#f39223] transition-colors px-4">
+            <a href={`tel:${siteConfig.contact?.split(',')[0]?.trim() || '8004055501'}`} className="flex items-center gap-2 hover:text-[#f39223] transition-colors px-4">
               <Phone size={18} className="text-[#f39223]" />
               <span className="text-[11px] uppercase tracking-wide">Call Now</span>
             </a>
             <div className="w-px h-6 bg-slate-200"></div>
-            <a href="https://wa.me/918004055501" target="_blank" rel="noreferrer" className="flex items-center gap-2 hover:text-green-600 transition-colors px-4">
+            <a href={`https://wa.me/91${siteConfig.contact?.split(',')[0]?.replace(/[^0-9]/g, '') || '8004055501'}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 hover:text-green-600 transition-colors px-4">
               <MessageCircle size={18} className="text-green-600" />
               <span className="text-[11px] uppercase tracking-wide">WhatsApp</span>
             </a>

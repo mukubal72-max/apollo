@@ -3,6 +3,7 @@ import { X, Calendar, User, Stethoscope, Phone, ArrowLeft, CheckCircle2, Chevron
 import { useAppContext } from '../context/AppContext';
 import React, { useState, useEffect } from 'react';
 import { OPDDoctor } from '../types';
+import { generateUUID } from '../lib/supabase';
 
 export default function OPDPopup() {
   const { 
@@ -81,7 +82,8 @@ export default function OPDPopup() {
     const message = encodeURIComponent(rawMessage);
 
     // Send to clinic number instead of patient self-share
-    const clinicNumber = siteConfig.contact?.replace(/[^0-9]/g, '') || '8004055501';
+    const firstPhone = siteConfig.contact?.split(',')[0] || '8004055501';
+    const clinicNumber = firstPhone.replace(/[^0-9]/g, '') || '8004055501';
     const whatsappUrl = `https://wa.me/91${clinicNumber}?text=${message}`;
     window.open(whatsappUrl, '_blank');
   };
@@ -150,7 +152,7 @@ export default function OPDPopup() {
     if (!selectedDoctor && !selectedPackageId) return;
 
     const newAppointment = {
-      id: Date.now().toString(),
+      id: generateUUID(),
       patientName: patientData.name,
       patientPhone: patientData.phone,
       patientWhatsapp: patientData.whatsapp,
@@ -183,7 +185,8 @@ export default function OPDPopup() {
       `\n_Please confirm my booking._`;
 
     const message = encodeURIComponent(rawMessage);
-    const clinicNumber = siteConfig.contact?.replace(/[^0-9]/g, '') || '8004055501';
+    const firstPhone = siteConfig.contact?.split(',')[0] || '8004055501';
+    const clinicNumber = firstPhone.replace(/[^0-9]/g, '') || '8004055501';
     window.open(`https://wa.me/91${clinicNumber}?text=${message}`, '_blank');
   };
 
@@ -642,9 +645,13 @@ export default function OPDPopup() {
                       
                       <div className="mt-8 pt-8 border-t border-slate-100 flex items-center justify-center gap-4">
                         <div className="flex -space-x-2">
-                          {[1,2,3].map(i => (
-                            <div key={i} className="w-6 h-6 rounded-full border-2 border-white bg-slate-200 overflow-hidden">
-                              <img src={`https://i.pravatar.cc/100?u=${i}`} alt="user" className="w-full h-full object-cover" />
+                          {[
+                            { name: 'RK', bg: 'bg-primary text-white' },
+                            { name: 'SS', bg: 'bg-secondary text-white' },
+                            { name: 'AP', bg: 'bg-accent/80 text-white' }
+                          ].map((avatar, idx) => (
+                            <div key={idx} className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-black uppercase tracking-tight ${avatar.bg} shadow-sm`}>
+                              {avatar.name}
                             </div>
                           ))}
                         </div>
@@ -661,10 +668,10 @@ export default function OPDPopup() {
               <div className="flex items-center gap-3">
                  <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl border border-white/10">
                    <Phone size={14} className="text-secondary" />
-                  <span className="text-xs font-black text-white uppercase tracking-widest">Appointment Desk: 8004055501</span>
+                  <span className="text-xs font-black text-white uppercase tracking-widest">Appointment Desk: {siteConfig.contact?.split(',')[0] || '8004055501'}</span>
                  </div>
               </div>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">© Apollo Clinic Basti • Unit of Apollo Gorakhpur Group</p>
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">© {siteConfig.name || 'Apollo Clinic Basti'} • Unit of Apollo Gorakhpur Group</p>
             </div>
           </motion.div>
         </div>

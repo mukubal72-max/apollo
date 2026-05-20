@@ -5,21 +5,21 @@ import { supabase } from '../lib/supabase';
 
 interface AppContextType {
   siteConfig: SiteConfig;
-  setSiteConfig: (config: SiteConfig) => void;
+  setSiteConfig: (config: SiteConfig, syncToDb?: boolean) => void;
   opdDoctors: OPDDoctor[];
-  setOpdDoctors: (doctors: OPDDoctor[]) => void;
+  setOpdDoctors: (doctors: OPDDoctor[], syncToDb?: boolean) => void;
   services: Service[];
   setServices: (services: Service[]) => void;
   appointments: Appointment[];
-  setAppointments: (appointments: Appointment[]) => void;
+  setAppointments: (appointments: Appointment[], syncToDb?: boolean) => void;
   testimonials: Testimonial[];
-  setTestimonials: (testimonials: Testimonial[]) => void;
+  setTestimonials: (testimonials: Testimonial[], syncToDb?: boolean) => void;
   departments: Department[];
-  setDepartments: (departments: Department[]) => void;
+  setDepartments: (departments: Department[], syncToDb?: boolean) => void;
   healthPackages: HealthPackage[];
-  setHealthPackages: (packages: HealthPackage[]) => void;
+  setHealthPackages: (packages: HealthPackage[], syncToDb?: boolean) => void;
   documents: ClinicDocument[];
-  setDocuments: (documents: ClinicDocument[]) => void;
+  setDocuments: (documents: ClinicDocument[], syncToDb?: boolean) => void;
   isOpdPopupOpen: boolean;
   setIsOpdPopupOpen: (open: boolean) => void;
   selectedPackageId: string | null;
@@ -179,17 +179,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Use a wrapped setter for siteConfig to avoid auto-sync during load
-  const wrappedSetSiteConfig = async (config: SiteConfig) => {
+  const wrappedSetSiteConfig = async (config: SiteConfig, syncToDb = true) => {
     setSiteConfig(config);
-    if (supabase && isInitialLoadDone) {
+    if (syncToDb && supabase && isInitialLoadDone) {
       const { error } = await supabase.from('site_config').upsert({ id: 'config', config_data: config });
       if (error) console.error("Site sync error:", error);
     }
   };
 
-  const wrappedSetDoctors = async (doctors: OPDDoctor[]) => {
+  const wrappedSetDoctors = async (doctors: OPDDoctor[], syncToDb = true) => {
     setOpdDoctors(doctors);
-    if (supabase && isInitialLoadDone) {
+    if (syncToDb && supabase && isInitialLoadDone) {
       const dbDocs = doctors.map(d => ({
         id: d.id,
         name: d.name,
@@ -212,9 +212,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const wrappedSetPackages = async (pkgs: HealthPackage[]) => {
+  const wrappedSetPackages = async (pkgs: HealthPackage[], syncToDb = true) => {
     setHealthPackages(pkgs);
-    if (supabase && isInitialLoadDone) {
+    if (syncToDb && supabase && isInitialLoadDone) {
       const dbPkgs = pkgs.map(p => ({
         id: p.id,
         name: p.name,
@@ -230,17 +230,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const wrappedSetTestimonials = async (tests: Testimonial[]) => {
+  const wrappedSetTestimonials = async (tests: Testimonial[], syncToDb = true) => {
     setTestimonials(tests);
-    if (supabase && isInitialLoadDone) {
+    if (syncToDb && supabase && isInitialLoadDone) {
       const { error } = await supabase.from('testimonials').upsert(tests);
       if (error) console.error("Testimonials sync error:", error);
     }
   };
 
-  const wrappedSetDepartments = async (depts: Department[]) => {
+  const wrappedSetDepartments = async (depts: Department[], syncToDb = true) => {
     setDepartments(depts);
-    if (supabase && isInitialLoadDone) {
+    if (syncToDb && supabase && isInitialLoadDone) {
       const dbDepts = depts.map(d => ({
         id: d.id,
         name: d.name,
@@ -252,9 +252,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const wrappedSetDocuments = async (docs: ClinicDocument[]) => {
+  const wrappedSetDocuments = async (docs: ClinicDocument[], syncToDb = true) => {
     setDocuments(docs);
-    if (supabase && isInitialLoadDone) {
+    if (syncToDb && supabase && isInitialLoadDone) {
       const dbFiles = docs.map(d => ({
         id: d.id,
         name: d.name,
@@ -266,9 +266,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const wrappedSetAppointments = async (newApps: Appointment[]) => {
+  const wrappedSetAppointments = async (newApps: Appointment[], syncToDb = true) => {
     setAppointments(newApps);
-    if (supabase && isInitialLoadDone && newApps.length > 0) {
+    if (syncToDb && supabase && isInitialLoadDone && newApps.length > 0) {
       // For appointments, we might be adding or updating.
       // Easiest is to upsert the entire current list OR the ones that are likely new/changed.
       // Since it's usually small for a clinic, we'll upsert the whole array to be safe, 
