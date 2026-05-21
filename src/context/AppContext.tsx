@@ -42,12 +42,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
   // States
   const [siteConfig, setSiteConfig] = useState<SiteConfig>(SITE_CONFIG);
-  const [opdDoctors, setOpdDoctors] = useState<OPDDoctor[]>(INITIAL_OPD_SCHEDULE);
+  const [opdDoctors, setOpdDoctors] = useState<OPDDoctor[]>([]);
   const [services, setServices] = useState<Service[]>(INITIAL_SERVICES);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [testimonials, setTestimonials] = useState<Testimonial[]>(INITIAL_TESTIMONIALS);
-  const [departments, setDepartments] = useState<Department[]>(INITIAL_DEPARTMENTS);
-  const [healthPackages, setHealthPackages] = useState<HealthPackage[]>(INITIAL_HEALTH_PACKAGES);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [healthPackages, setHealthPackages] = useState<HealthPackage[]>([]);
   const [documents, setDocuments] = useState<ClinicDocument[]>([]);
   const [isInitialLoadDone, setIsInitialLoadDone] = useState(false);
   const [siteConfigDbId, setSiteConfigDbId] = useState<string | null>(null);
@@ -87,7 +87,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setSiteConfig(site.config_data as SiteConfig);
         setSiteConfigDbId(site.id);
       }
-      if (docs && docs.length > 0) {
+      if (docs) {
         setOpdDoctors(docs.map(d => ({
           id: d.id,
           name: d.name,
@@ -106,7 +106,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           consultationTime: d.consultation_time
         })));
       }
-      if (pkgs && pkgs.length > 0) {
+      if (pkgs) {
         setHealthPackages(pkgs.map(p => ({
           id: p.id,
           name: p.name,
@@ -118,7 +118,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           description: p.description
         })));
       }
-      if (apps && apps.length > 0) {
+      if (apps) {
         setAppointments(apps.map(a => ({
           id: a.id,
           patientName: a.patient_name,
@@ -135,8 +135,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           finalPrice: Number(a.final_price) || 0
         })));
       }
-      if (tests && tests.length > 0) setTestimonials(tests);
-      if (depts && depts.length > 0) {
+      if (tests) setTestimonials(tests);
+      if (depts) {
         setDepartments(depts.map(d => ({
           id: d.id,
           name: d.name,
@@ -144,7 +144,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           description: d.description
         })));
       }
-      if (clinicFiles && clinicFiles.length > 0) setDocuments(clinicFiles.map(f => ({
+      if (clinicFiles) setDocuments(clinicFiles.map(f => ({
         id: f.id,
         name: f.name,
         fileData: f.file_url,
@@ -159,6 +159,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     loadData();
+
+    // Setup Supabase Realtime channel for synchronization across all devices and browsers
+    let channel: any = null;
+    if (supabase) {
+      channel = supabase
+        .channel('schema-db-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public'
+          },
+          () => {
+            loadData();
+          }
+        )
+        .subscribe();
+    }
 
     // Focus handler for auto-refresh (if not on administrative panel)
     const handleFocus = () => {
@@ -179,6 +197,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => {
       window.removeEventListener('focus', handleFocus);
       clearInterval(interval);
+      if (supabase && channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, []);
 
