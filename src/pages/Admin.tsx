@@ -415,7 +415,7 @@ export default function Admin() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full p-5 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-sm"
-                    placeholder="admin"
+                    placeholder="Enter email or admin ID"
                   />
                 </div>
                 <div>
@@ -426,13 +426,8 @@ export default function Admin() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full p-5 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-sm"
-                    placeholder="admin@123456"
+                    placeholder="Enter password"
                   />
-                </div>
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-[11px] text-slate-500 font-medium leading-relaxed">
-                  <p className="font-bold text-slate-700 mb-0.5">💡 Cloud Credentials Info</p>
-                  <p>Cloud Admin ID: <code className="font-bold font-mono text-primary bg-primary/5 px-1 py-0.5 rounded">admin</code> (internal mapping to admin@clinic.com)</p>
-                  <p>Password: <code className="font-bold font-mono text-primary bg-primary/5 px-1 py-0.5 rounded">admin@123456</code></p>
                 </div>
                 <div className="text-right">
                   <button
