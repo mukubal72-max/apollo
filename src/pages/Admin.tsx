@@ -115,21 +115,26 @@ export default function Admin() {
 
     setLoading(true);
     try {
+      let finalEmail = email.trim();
+      if (finalEmail && !finalEmail.includes('@')) {
+        finalEmail = `${finalEmail}@clinic.com`;
+      }
+
       if (isSignUp) {
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: finalEmail,
           password
         });
         if (error) {
           setAuthError(error.message);
         } else if (data.user) {
-          alert('Account created! Access granted.');
+          alert('Account created with credentials! Access granted.');
           setActiveUser(data.user);
           setIsAuthenticated(true);
         }
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
-          email,
+          email: finalEmail,
           password
         });
         if (error) {
@@ -403,14 +408,14 @@ export default function Admin() {
             {loginMethod === 'supabase' ? (
               <>
                 <div>
-                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-1">Email Address</label>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-1">Cloud Admin ID / Email</label>
                   <input 
-                    type="email" 
+                    type="text" 
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full p-5 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-sm"
-                    placeholder="admin@clinic.com"
+                    placeholder="admin"
                   />
                 </div>
                 <div>
@@ -421,8 +426,13 @@ export default function Admin() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full p-5 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-sm"
-                    placeholder="Enter password"
+                    placeholder="admin@123456"
                   />
+                </div>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-[11px] text-slate-500 font-medium leading-relaxed">
+                  <p className="font-bold text-slate-700 mb-0.5">💡 Cloud Credentials Info</p>
+                  <p>Cloud Admin ID: <code className="font-bold font-mono text-primary bg-primary/5 px-1 py-0.5 rounded">admin</code> (internal mapping to admin@clinic.com)</p>
+                  <p>Password: <code className="font-bold font-mono text-primary bg-primary/5 px-1 py-0.5 rounded">admin@123456</code></p>
                 </div>
                 <div className="text-right">
                   <button
