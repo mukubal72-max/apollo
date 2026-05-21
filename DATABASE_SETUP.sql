@@ -1,51 +1,51 @@
--- =========================================================
--- SUPABASE DATABASE SETUP
--- SECURE • REALTIME • ZERO LINTER WARNINGS
--- =========================================================
+-- =====================================================
+-- CLEAN OLD TABLES
+-- =====================================================
 
--- =========================================================
--- 1. CLEANUP OLD OBJECTS
--- =========================================================
+DROP TABLE IF EXISTS public.site_config CASCADE;
+DROP TABLE IF EXISTS public.departments CASCADE;
+DROP TABLE IF EXISTS public.opd_doctors CASCADE;
+DROP TABLE IF EXISTS public.health_packages CASCADE;
+DROP TABLE IF EXISTS public.appointments CASCADE;
+DROP TABLE IF EXISTS public.testimonials CASCADE;
+DROP TABLE IF EXISTS public.clinic_documents CASCADE;
 
-DROP VIEW IF EXISTS public.public_view_packages CASCADE;
-DROP VIEW IF EXISTS public.public_site_config CASCADE;
-DROP VIEW IF EXISTS public.public_opd_doctors CASCADE;
-DROP VIEW IF EXISTS public.public_view_testimonials CASCADE;
-DROP VIEW IF EXISTS public.public_view_departments CASCADE;
-DROP VIEW IF EXISTS public.public_clinic_documents CASCADE;
-DROP VIEW IF EXISTS public.public_testimonials CASCADE;
-DROP VIEW IF EXISTS public.public_health_packages CASCADE;
-DROP VIEW IF EXISTS public.public_view_doctors CASCADE;
-DROP VIEW IF EXISTS public.public_departments CASCADE;
-DROP VIEW IF EXISTS public.public_view_documents CASCADE;
-DROP VIEW IF EXISTS public.public_view_site_config CASCADE;
+-- =====================================================
+-- ENABLE UUID EXTENSION
+-- =====================================================
 
-DROP TABLE IF EXISTS public.doctors CASCADE;
-DROP TABLE IF EXISTS public.notices CASCADE;
-DROP TABLE IF EXISTS public.services CASCADE;
-DROP TABLE IF EXISTS public.documents CASCADE;
-DROP TABLE IF EXISTS public.hospital_config CASCADE;
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- =========================================================
--- 2. CREATE TABLES
--- =========================================================
+-- =====================================================
+-- SITE CONFIG
+-- =====================================================
 
-CREATE TABLE IF NOT EXISTS site_config (
-  id TEXT PRIMARY KEY DEFAULT 'config',
+CREATE TABLE public.site_config (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   config_data JSONB NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_by UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS departments (
-  id TEXT PRIMARY KEY,
+-- =====================================================
+-- DEPARTMENTS
+-- =====================================================
+
+CREATE TABLE public.departments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   head_of_department TEXT,
   description TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_by UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS opd_doctors (
-  id TEXT PRIMARY KEY,
+-- =====================================================
+-- OPD DOCTORS
+-- =====================================================
+
+CREATE TABLE public.opd_doctors (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   specialty TEXT,
   qualifications TEXT,
@@ -59,12 +59,17 @@ CREATE TABLE IF NOT EXISTS opd_doctors (
   consultation_time TEXT DEFAULT '10:00 AM - 02:00 PM',
   photo TEXT,
   expiry_date TEXT,
-  department_id TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  department_id UUID,
+  created_by UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS health_packages (
-  id TEXT PRIMARY KEY,
+-- =====================================================
+-- HEALTH PACKAGES
+-- =====================================================
+
+CREATE TABLE public.health_packages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   actual_price NUMERIC,
   offer_price NUMERIC,
@@ -72,16 +77,21 @@ CREATE TABLE IF NOT EXISTS health_packages (
   tests TEXT[],
   discount_badge TEXT,
   description TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_by UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS appointments (
-  id TEXT PRIMARY KEY,
+-- =====================================================
+-- APPOINTMENTS
+-- =====================================================
+
+CREATE TABLE public.appointments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_name TEXT NOT NULL,
   patient_phone TEXT NOT NULL,
   patient_whatsapp TEXT,
   patient_address TEXT,
-  doctor_id TEXT,
+  doctor_id UUID,
   date TEXT,
   time TEXT,
   status TEXT DEFAULT 'pending',
@@ -89,42 +99,53 @@ CREATE TABLE IF NOT EXISTS appointments (
   is_home_collection BOOLEAN DEFAULT false,
   claim_offer BOOLEAN DEFAULT false,
   final_price NUMERIC,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_by UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS testimonials (
-  id TEXT PRIMARY KEY,
+-- =====================================================
+-- TESTIMONIALS
+-- =====================================================
+
+CREATE TABLE public.testimonials (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   rating INTEGER DEFAULT 5,
   review TEXT,
   photo TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_by UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS clinic_documents (
-  id TEXT PRIMARY KEY,
+-- =====================================================
+-- CLINIC DOCUMENTS
+-- =====================================================
+
+CREATE TABLE public.clinic_documents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   file_url TEXT,
   file_type TEXT,
   upload_date TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_by UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- =========================================================
--- 3. ENABLE RLS
--- =========================================================
+-- =====================================================
+-- ENABLE RLS
+-- =====================================================
 
-ALTER TABLE site_config ENABLE ROW LEVEL SECURITY;
-ALTER TABLE departments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE opd_doctors ENABLE ROW LEVEL SECURITY;
-ALTER TABLE health_packages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE testimonials ENABLE ROW LEVEL SECURITY;
-ALTER TABLE clinic_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.site_config ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.departments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.opd_doctors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.health_packages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.testimonials ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.clinic_documents ENABLE ROW LEVEL SECURITY;
 
--- =========================================================
--- 4. REMOVE OLD POLICIES
--- =========================================================
+-- =====================================================
+-- DROP OLD POLICIES
+-- =====================================================
 
 DO $$
 DECLARE r RECORD;
@@ -136,16 +157,16 @@ BEGIN
   )
   LOOP
     EXECUTE format(
-      'DROP POLICY IF EXISTS %I ON %I',
+      'DROP POLICY IF EXISTS %I ON public.%I',
       r.policyname,
       r.tablename
     );
   END LOOP;
 END $$;
 
--- =========================================================
--- 5. GRANTS
--- =========================================================
+-- =====================================================
+-- GRANTS
+-- =====================================================
 
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 
@@ -157,328 +178,229 @@ DELETE
 ON ALL TABLES IN SCHEMA public
 TO anon, authenticated;
 
--- =========================================================
--- 6. SAFE RLS POLICIES
--- FIXES ALL 7 WARNINGS
--- =========================================================
-
--- -------------------------
--- SITE CONFIG
--- -------------------------
+-- =====================================================
+-- SITE CONFIG POLICIES
+-- =====================================================
 
 CREATE POLICY "site_config_select"
-ON site_config
+ON public.site_config
 FOR SELECT
 TO anon, authenticated
-USING (id IS NOT NULL);
+USING (true);
 
 CREATE POLICY "site_config_insert"
-ON site_config
+ON public.site_config
 FOR INSERT
-TO anon, authenticated
-WITH CHECK (id IS NOT NULL);
+TO authenticated
+WITH CHECK (auth.uid() = created_by);
 
 CREATE POLICY "site_config_update"
-ON site_config
+ON public.site_config
 FOR UPDATE
-TO anon, authenticated
-USING (id IS NOT NULL)
-WITH CHECK (id IS NOT NULL);
+TO authenticated
+USING (auth.uid() = created_by)
+WITH CHECK (auth.uid() = created_by);
 
 CREATE POLICY "site_config_delete"
-ON site_config
+ON public.site_config
 FOR DELETE
-TO anon, authenticated
-USING (id IS NOT NULL);
+TO authenticated
+USING (auth.uid() = created_by);
 
--- -------------------------
--- DEPARTMENTS
--- -------------------------
+-- =====================================================
+-- DEPARTMENTS POLICIES
+-- =====================================================
 
 CREATE POLICY "departments_select"
-ON departments
+ON public.departments
 FOR SELECT
 TO anon, authenticated
-USING (id IS NOT NULL);
+USING (true);
 
 CREATE POLICY "departments_insert"
-ON departments
+ON public.departments
 FOR INSERT
-TO anon, authenticated
-WITH CHECK (id IS NOT NULL);
+TO authenticated
+WITH CHECK (auth.uid() = created_by);
 
 CREATE POLICY "departments_update"
-ON departments
+ON public.departments
 FOR UPDATE
-TO anon, authenticated
-USING (id IS NOT NULL)
-WITH CHECK (id IS NOT NULL);
+TO authenticated
+USING (auth.uid() = created_by)
+WITH CHECK (auth.uid() = created_by);
 
 CREATE POLICY "departments_delete"
-ON departments
+ON public.departments
 FOR DELETE
-TO anon, authenticated
-USING (id IS NOT NULL);
+TO authenticated
+USING (auth.uid() = created_by);
 
--- -------------------------
--- OPD DOCTORS
--- -------------------------
+-- =====================================================
+-- OPD DOCTORS POLICIES
+-- =====================================================
 
 CREATE POLICY "opd_doctors_select"
-ON opd_doctors
+ON public.opd_doctors
 FOR SELECT
 TO anon, authenticated
-USING (id IS NOT NULL);
+USING (true);
 
 CREATE POLICY "opd_doctors_insert"
-ON opd_doctors
+ON public.opd_doctors
 FOR INSERT
-TO anon, authenticated
-WITH CHECK (id IS NOT NULL);
+TO authenticated
+WITH CHECK (auth.uid() = created_by);
 
 CREATE POLICY "opd_doctors_update"
-ON opd_doctors
+ON public.opd_doctors
 FOR UPDATE
-TO anon, authenticated
-USING (id IS NOT NULL)
-WITH CHECK (id IS NOT NULL);
+TO authenticated
+USING (auth.uid() = created_by)
+WITH CHECK (auth.uid() = created_by);
 
 CREATE POLICY "opd_doctors_delete"
-ON opd_doctors
+ON public.opd_doctors
 FOR DELETE
-TO anon, authenticated
-USING (id IS NOT NULL);
+TO authenticated
+USING (auth.uid() = created_by);
 
--- -------------------------
--- HEALTH PACKAGES
--- -------------------------
+-- =====================================================
+-- HEALTH PACKAGES POLICIES
+-- =====================================================
 
 CREATE POLICY "health_packages_select"
-ON health_packages
+ON public.health_packages
 FOR SELECT
 TO anon, authenticated
-USING (id IS NOT NULL);
+USING (true);
 
 CREATE POLICY "health_packages_insert"
-ON health_packages
+ON public.health_packages
 FOR INSERT
-TO anon, authenticated
-WITH CHECK (id IS NOT NULL);
+TO authenticated
+WITH CHECK (auth.uid() = created_by);
 
 CREATE POLICY "health_packages_update"
-ON health_packages
+ON public.health_packages
 FOR UPDATE
-TO anon, authenticated
-USING (id IS NOT NULL)
-WITH CHECK (id IS NOT NULL);
+TO authenticated
+USING (auth.uid() = created_by)
+WITH CHECK (auth.uid() = created_by);
 
 CREATE POLICY "health_packages_delete"
-ON health_packages
+ON public.health_packages
 FOR DELETE
-TO anon, authenticated
-USING (id IS NOT NULL);
+TO authenticated
+USING (auth.uid() = created_by);
 
--- -------------------------
--- APPOINTMENTS
--- -------------------------
+-- =====================================================
+-- APPOINTMENTS POLICIES
+-- =====================================================
 
 CREATE POLICY "appointments_select"
-ON appointments
+ON public.appointments
 FOR SELECT
 TO anon, authenticated
-USING (id IS NOT NULL);
+USING (true);
 
 CREATE POLICY "appointments_insert"
-ON appointments
+ON public.appointments
 FOR INSERT
-TO anon, authenticated
-WITH CHECK (id IS NOT NULL);
+TO authenticated
+WITH CHECK (auth.uid() = created_by);
 
 CREATE POLICY "appointments_update"
-ON appointments
+ON public.appointments
 FOR UPDATE
-TO anon, authenticated
-USING (id IS NOT NULL)
-WITH CHECK (id IS NOT NULL);
+TO authenticated
+USING (auth.uid() = created_by)
+WITH CHECK (auth.uid() = created_by);
 
 CREATE POLICY "appointments_delete"
-ON appointments
+ON public.appointments
 FOR DELETE
-TO anon, authenticated
-USING (id IS NOT NULL);
+TO authenticated
+USING (auth.uid() = created_by);
 
--- -------------------------
--- TESTIMONIALS
--- -------------------------
+-- =====================================================
+-- TESTIMONIALS POLICIES
+-- =====================================================
 
 CREATE POLICY "testimonials_select"
-ON testimonials
+ON public.testimonials
 FOR SELECT
 TO anon, authenticated
-USING (id IS NOT NULL);
+USING (true);
 
 CREATE POLICY "testimonials_insert"
-ON testimonials
+ON public.testimonials
 FOR INSERT
-TO anon, authenticated
-WITH CHECK (id IS NOT NULL);
+TO authenticated
+WITH CHECK (auth.uid() = created_by);
 
 CREATE POLICY "testimonials_update"
-ON testimonials
+ON public.testimonials
 FOR UPDATE
-TO anon, authenticated
-USING (id IS NOT NULL)
-WITH CHECK (id IS NOT NULL);
+TO authenticated
+USING (auth.uid() = created_by)
+WITH CHECK (auth.uid() = created_by);
 
 CREATE POLICY "testimonials_delete"
-ON testimonials
+ON public.testimonials
 FOR DELETE
-TO anon, authenticated
-USING (id IS NOT NULL);
+TO authenticated
+USING (auth.uid() = created_by);
 
--- -------------------------
--- CLINIC DOCUMENTS
--- -------------------------
+-- =====================================================
+-- CLINIC DOCUMENTS POLICIES
+-- =====================================================
 
 CREATE POLICY "clinic_documents_select"
-ON clinic_documents
+ON public.clinic_documents
 FOR SELECT
 TO anon, authenticated
-USING (id IS NOT NULL);
+USING (true);
 
 CREATE POLICY "clinic_documents_insert"
-ON clinic_documents
+ON public.clinic_documents
 FOR INSERT
-TO anon, authenticated
-WITH CHECK (id IS NOT NULL);
+TO authenticated
+WITH CHECK (auth.uid() = created_by);
 
 CREATE POLICY "clinic_documents_update"
-ON clinic_documents
+ON public.clinic_documents
 FOR UPDATE
-TO anon, authenticated
-USING (id IS NOT NULL)
-WITH CHECK (id IS NOT NULL);
+TO authenticated
+USING (auth.uid() = created_by)
+WITH CHECK (auth.uid() = created_by);
 
 CREATE POLICY "clinic_documents_delete"
-ON clinic_documents
+ON public.clinic_documents
 FOR DELETE
-TO anon, authenticated
-USING (id IS NOT NULL);
+TO authenticated
+USING (auth.uid() = created_by);
 
--- =========================================================
--- 7. REALTIME CONFIGURATION
--- =========================================================
+-- =====================================================
+-- REALTIME
+-- =====================================================
 
-DO $$
-BEGIN
+ALTER PUBLICATION supabase_realtime ADD TABLE public.site_config;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.departments;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.opd_doctors;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.health_packages;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.appointments;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.testimonials;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.clinic_documents;
 
-  IF EXISTS (
-    SELECT 1
-    FROM pg_publication_tables
-    WHERE pubname = 'supabase_realtime'
-    AND tablename = 'site_config'
-  ) THEN
-    EXECUTE 'ALTER PUBLICATION supabase_realtime DROP TABLE site_config';
-  END IF;
+-- =====================================================
+-- REPLICA IDENTITY
+-- =====================================================
 
-  IF EXISTS (
-    SELECT 1
-    FROM pg_publication_tables
-    WHERE pubname = 'supabase_realtime'
-    AND tablename = 'departments'
-  ) THEN
-    EXECUTE 'ALTER PUBLICATION supabase_realtime DROP TABLE departments';
-  END IF;
-
-  IF EXISTS (
-    SELECT 1
-    FROM pg_publication_tables
-    WHERE pubname = 'supabase_realtime'
-    AND tablename = 'opd_doctors'
-  ) THEN
-    EXECUTE 'ALTER PUBLICATION supabase_realtime DROP TABLE opd_doctors';
-  END IF;
-
-  IF EXISTS (
-    SELECT 1
-    FROM pg_publication_tables
-    WHERE pubname = 'supabase_realtime'
-    AND tablename = 'health_packages'
-  ) THEN
-    EXECUTE 'ALTER PUBLICATION supabase_realtime DROP TABLE health_packages';
-  END IF;
-
-  IF EXISTS (
-    SELECT 1
-    FROM pg_publication_tables
-    WHERE pubname = 'supabase_realtime'
-    AND tablename = 'appointments'
-  ) THEN
-    EXECUTE 'ALTER PUBLICATION supabase_realtime DROP TABLE appointments';
-  END IF;
-
-  IF EXISTS (
-    SELECT 1
-    FROM pg_publication_tables
-    WHERE pubname = 'supabase_realtime'
-    AND tablename = 'testimonials'
-  ) THEN
-    EXECUTE 'ALTER PUBLICATION supabase_realtime DROP TABLE testimonials';
-  END IF;
-
-  IF EXISTS (
-    SELECT 1
-    FROM pg_publication_tables
-    WHERE pubname = 'supabase_realtime'
-    AND tablename = 'clinic_documents'
-  ) THEN
-    EXECUTE 'ALTER PUBLICATION supabase_realtime DROP TABLE clinic_documents';
-  END IF;
-
-END $$;
-
-ALTER PUBLICATION supabase_realtime ADD TABLE site_config;
-ALTER PUBLICATION supabase_realtime ADD TABLE departments;
-ALTER PUBLICATION supabase_realtime ADD TABLE opd_doctors;
-ALTER PUBLICATION supabase_realtime ADD TABLE health_packages;
-ALTER PUBLICATION supabase_realtime ADD TABLE appointments;
-ALTER PUBLICATION supabase_realtime ADD TABLE testimonials;
-ALTER PUBLICATION supabase_realtime ADD TABLE clinic_documents;
-
--- =========================================================
--- 8. REPLICA IDENTITY
--- =========================================================
-
-ALTER TABLE site_config REPLICA IDENTITY FULL;
-ALTER TABLE departments REPLICA IDENTITY FULL;
-ALTER TABLE opd_doctors REPLICA IDENTITY FULL;
-ALTER TABLE health_packages REPLICA IDENTITY FULL;
-ALTER TABLE appointments REPLICA IDENTITY FULL;
-ALTER TABLE testimonials REPLICA IDENTITY FULL;
-ALTER TABLE clinic_documents REPLICA IDENTITY FULL;
-
--- =========================================================
--- 9. DEFAULT SEED DATA
--- =========================================================
-
-INSERT INTO site_config (id, config_data)
-VALUES (
-  'config',
-  '{
-    "name": "Apollo Clinic Basti",
-    "location": "APOLLO CLINIC BASTI, Station Road, Basti - 272002",
-    "contact": "8004055501",
-    "email": "info@apollobasti.com"
-  }'
-)
-ON CONFLICT (id) DO NOTHING;
-
--- =========================================================
--- COMPLETE
--- =========================================================
--- ✅ ZERO RLS WARNINGS
--- ✅ REALTIME ENABLED
--- ✅ REPLICA ENABLED
--- ✅ REACT SYNC READY
--- ✅ SUPABASE SAFE
--- =========================================================
+ALTER TABLE public.site_config REPLICA IDENTITY FULL;
+ALTER TABLE public.departments REPLICA IDENTITY FULL;
+ALTER TABLE public.opd_doctors REPLICA IDENTITY FULL;
+ALTER TABLE public.health_packages REPLICA IDENTITY FULL;
+ALTER TABLE public.appointments REPLICA IDENTITY FULL;
+ALTER TABLE public.testimonials REPLICA IDENTITY FULL;
+ALTER TABLE public.clinic_documents REPLICA IDENTITY FULL;

@@ -187,8 +187,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const oldConfig = siteConfig;
     setSiteConfig(config);
     if (syncToDb && supabase && isInitialLoadDone) {
-      const idToUse = siteConfigDbId || 'config';
-      const { error } = await supabase.from('site_config').upsert({ id: idToUse, config_data: config });
+      const idToUse = siteConfigDbId || '00000000-0000-0000-0000-000000000001';
+      const { data: { user } } = await supabase.auth.getUser();
+      const payload: any = { id: idToUse, config_data: config };
+      if (user) {
+        payload.created_by = user.id;
+      }
+      const { error } = await supabase.from('site_config').upsert(payload);
       if (error) {
         console.error("Site sync error:", error);
         setSiteConfig(oldConfig);
@@ -209,23 +214,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
 
       if (changedOrNew.length > 0) {
-        const dbDocs = changedOrNew.map(d => ({
-          id: d.id,
-          name: d.name,
-          specialty: d.specialty,
-          qualifications: d.qualifications,
-          experience: d.experience,
-          department_id: d.departmentId,
-          availability_type: d.availabilityType,
-          available_days: d.availableDays,
-          visiting_date: d.visitingDate,
-          location: d.location,
-          photo: d.photo,
-          is_available: d.isAvailable,
-          expiry_date: d.expiryDate,
-          fee: d.fee,
-          consultation_time: d.consultationTime
-        }));
+        const { data: { user } } = await supabase.auth.getUser();
+        const dbDocs = changedOrNew.map(d => {
+          const payload: any = {
+            id: d.id,
+            name: d.name,
+            specialty: d.specialty,
+            qualifications: d.qualifications,
+            experience: d.experience,
+            department_id: d.departmentId || null,
+            availability_type: d.availabilityType,
+            available_days: d.availableDays,
+            visiting_date: d.visitingDate,
+            location: d.location,
+            photo: d.photo,
+            is_available: d.isAvailable,
+            expiry_date: d.expiryDate,
+            fee: d.fee,
+            consultation_time: d.consultationTime
+          };
+          if (user) {
+            payload.created_by = user.id;
+          }
+          return payload;
+        });
         const { error } = await supabase.from('opd_doctors').upsert(dbDocs);
         if (error) {
           console.error("Doctors sync error:", error);
@@ -248,16 +260,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
 
       if (changedOrNew.length > 0) {
-        const dbPkgs = changedOrNew.map(p => ({
-          id: p.id,
-          name: p.name,
-          actual_price: p.actualPrice,
-          offer_price: p.offerPrice,
-          total_tests: p.totalTests,
-          tests: p.tests,
-          discount_badge: p.discountBadge,
-          description: p.description
-        }));
+        const { data: { user } } = await supabase.auth.getUser();
+        const dbPkgs = changedOrNew.map(p => {
+          const payload: any = {
+            id: p.id,
+            name: p.name,
+            actual_price: p.actualPrice,
+            offer_price: p.offerPrice,
+            total_tests: p.totalTests,
+            tests: p.tests,
+            discount_badge: p.discountBadge,
+            description: p.description
+          };
+          if (user) {
+            payload.created_by = user.id;
+          }
+          return payload;
+        });
         const { error } = await supabase.from('health_packages').upsert(dbPkgs);
         if (error) {
           console.error("Packages sync error:", error);
@@ -280,7 +299,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
 
       if (changedOrNew.length > 0) {
-        const { error } = await supabase.from('testimonials').upsert(changedOrNew);
+        const { data: { user } } = await supabase.auth.getUser();
+        const payload = changedOrNew.map(t => {
+          const item: any = {
+            id: t.id,
+            name: t.name,
+            rating: t.rating,
+            review: t.review,
+            photo: t.photo
+          };
+          if (user) {
+            item.created_by = user.id;
+          }
+          return item;
+        });
+        const { error } = await supabase.from('testimonials').upsert(payload);
         if (error) {
           console.error("Testimonials sync error:", error);
           setTestimonials(oldTests);
@@ -302,12 +335,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
 
       if (changedOrNew.length > 0) {
-        const dbDepts = changedOrNew.map(d => ({
-          id: d.id,
-          name: d.name,
-          head_of_department: d.headOfDepartment,
-          description: d.description
-        }));
+        const { data: { user } } = await supabase.auth.getUser();
+        const dbDepts = changedOrNew.map(d => {
+          const payload: any = {
+            id: d.id,
+            name: d.name,
+            head_of_department: d.headOfDepartment,
+            description: d.description
+          };
+          if (user) {
+            payload.created_by = user.id;
+          }
+          return payload;
+        });
         const { error } = await supabase.from('departments').upsert(dbDepts);
         if (error) {
           console.error("Departments sync error:", error);
@@ -330,12 +370,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
 
       if (changedOrNew.length > 0) {
-        const dbFiles = changedOrNew.map(d => ({
-          id: d.id,
-          name: d.name,
-          file_url: d.fileData,
-          upload_date: d.uploadDate
-        }));
+        const { data: { user } } = await supabase.auth.getUser();
+        const dbFiles = changedOrNew.map(d => {
+          const payload: any = {
+            id: d.id,
+            name: d.name,
+            file_url: d.fileData,
+            upload_date: d.uploadDate
+          };
+          if (user) {
+            payload.created_by = user.id;
+          }
+          return payload;
+        });
         const { error } = await supabase.from('clinic_documents').upsert(dbFiles);
         if (error) {
           console.error("Documents sync error:", error);
@@ -360,21 +407,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
 
       if (changedOrNew.length > 0) {
-        const dbApps = changedOrNew.map(a => ({
-          id: a.id,
-          patient_name: a.patientName,
-          patient_phone: a.patientPhone,
-          patient_whatsapp: a.patientWhatsapp,
-          patient_address: a.patientAddress,
-          doctor_id: a.doctorId,
-          date: a.date,
-          time: a.time,
-          status: a.status,
-          type: a.type,
-          is_home_collection: a.isHomeCollection,
-          claim_offer: a.claimOffer,
-          final_price: a.finalPrice
-        }));
+        const { data: { user } } = await supabase.auth.getUser();
+        const dbApps = changedOrNew.map(a => {
+          const payload: any = {
+            id: a.id,
+            patient_name: a.patientName,
+            patient_phone: a.patientPhone,
+            patient_whatsapp: a.patientWhatsapp,
+            patient_address: a.patientAddress,
+            doctor_id: a.doctorId || null,
+            date: a.date,
+            time: a.time,
+            status: a.status,
+            type: a.type,
+            is_home_collection: a.isHomeCollection,
+            claim_offer: a.claimOffer,
+            final_price: a.finalPrice
+          };
+          if (user) {
+            payload.created_by = user.id;
+          }
+          return payload;
+        });
         const { error } = await supabase.from('appointments').upsert(dbApps);
         if (error) {
           console.error("Appointments sync error:", error);

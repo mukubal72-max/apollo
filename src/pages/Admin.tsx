@@ -3,7 +3,7 @@ import { useAppContext } from '../context/AppContext';
 import { Plus, Trash2, Edit, Settings, Users, Activity, Lock, Upload, Image as ImageIcon, Calendar, Check, X, Phone, User, Clock, Shield, FlaskConical, FileText, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { OPDDoctor, Appointment, Testimonial, Department, HealthPackage, ClinicDocument } from '../types';
-import { generateUUID } from '../lib/supabase';
+import { supabase, generateUUID } from '../lib/supabase';
 
 export default function Admin() {
   const { 
@@ -26,6 +26,13 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'site' | 'doctors' | 'services' | 'appointments' | 'testimonials' | 'marketing' | 'departments' | 'checkups' | 'documents'>('dashboard');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
+  const [loginMethod, setLoginMethod] = useState<'supabase' | 'legacy'>('supabase');
+  const [email, setEmail] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [activeUser, setActiveUser] = useState<any>(null);
+
   const logoInputRef = useRef<HTMLInputElement>(null);
   const posterInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,6 +46,28 @@ export default function Admin() {
     description: "Book any health checkup package today and get an additional 10% FLAT discount on home sample collection services in Basti.",
     offerText: "10% off"
   });
+
+  // Monitor Supabase Auth state
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user && !session.user.is_anonymous) {
+        setActiveUser(session.user);
+        setIsAuthenticated(true);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user && !session.user.is_anonymous) {
+        setActiveUser(session.user);
+        setIsAuthenticated(true);
+      } else if (!session) {
+        setActiveUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Synchronize promoEdit with siteConfig when it loads
   useEffect(() => {
@@ -54,8 +83,8 @@ export default function Admin() {
       setTimeout(() => {
         setSavingStatus({ ...savingStatus, [tab]: false });
       }, 1500);
-    } catch (e) {
-      alert('Save failed: ' + e);
+    } catch (e: any) {
+      alert('Save failed: ' + (e.message || e));
       setSavingStatus({ ...savingStatus, [tab]: false });
     }
   };
@@ -66,12 +95,54 @@ export default function Admin() {
     });
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'admin@12345') {
-      setIsAuthenticated(true);
-    } else {
-      alert('Wrong password!');
+    setAuthError('');
+
+    if (loginMethod === 'legacy') {
+      if (password === 'admin@12345') {
+        setIsAuthenticated(true);
+      } else {
+        setAuthError('Wrong passcode!');
+      }
+      return;
+    }
+
+    if (!supabase) {
+      setAuthError('Supabase is not initialized. Please configure API keys.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (isSignUp) {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password
+        });
+        if (error) {
+          setAuthError(error.message);
+        } else if (data.user) {
+          alert('Account created! Access granted.');
+          setActiveUser(data.user);
+          setIsAuthenticated(true);
+        }
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        if (error) {
+          setAuthError(error.message);
+        } else if (data.user) {
+          setActiveUser(data.user);
+          setIsAuthenticated(true);
+        }
+      }
+    } catch (err: any) {
+      setAuthError(err.message || 'Authentication failed.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -297,7 +368,7 @@ export default function Admin() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center container mx-auto px-4">
+      <div className="min-h-[70vh] flex items-center justify-center container mx-auto px-4 py-12">
         <motion.div 
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -306,20 +377,92 @@ export default function Admin() {
           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 text-primary">
             <Lock size={32} />
           </div>
-          <h2 className="text-2xl font-black text-center mb-8 uppercase tracking-tighter">Admin Panel Access</h2>
+          <h2 className="text-2xl font-black text-center mb-6 uppercase tracking-tighter">Admin Panel Access</h2>
+          
+          {/* Tabs */}
+          <div className="flex bg-slate-100 p-1.5 rounded-2xl mb-8">
+            <button
+              onClick={() => { setLoginMethod('supabase'); setAuthError(''); }}
+              className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
+                loginMethod === 'supabase' ? 'bg-white shadow text-primary' : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Cloud Admin
+            </button>
+            <button
+              onClick={() => { setLoginMethod('legacy'); setAuthError(''); }}
+              className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all ${
+                loginMethod === 'legacy' ? 'bg-white shadow text-primary' : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Passcode
+            </button>
+          </div>
+
           <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-1">Internal Password</label>
-              <input 
-                type="password" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-6 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold"
-                placeholder="Enter password"
-              />
-            </div>
-            <button type="submit" className="w-full bg-primary text-white py-5 rounded-2xl font-black shadow-xl shadow-primary/30 hover:scale-[1.02] transition-all uppercase tracking-widest text-xs">
-              Confirm Access
+            {loginMethod === 'supabase' ? (
+              <>
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-1">Email Address</label>
+                  <input 
+                    type="email" 
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full p-5 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-sm"
+                    placeholder="admin@clinic.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-1">Password</label>
+                  <input 
+                    type="password" 
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full p-5 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-sm"
+                    placeholder="Enter password"
+                  />
+                </div>
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => setIsSignUp(!isSignUp)}
+                    className="text-xs font-black text-primary uppercase tracking-wider hover:underline"
+                  >
+                    {isSignUp ? 'Already have an account? Sign In' : "New Setup? Create Account"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div>
+                <label className="block text-[10px] font-black uppercase text-slate-400 mb-2 ml-1">Internal Passcode</label>
+                <input 
+                  type="password" 
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full p-6 rounded-2xl border border-slate-100 bg-slate-50 focus:bg-white focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-sm"
+                  placeholder="Enter passcode"
+                />
+                <p className="text-[10px] font-medium text-slate-400 mt-2 ml-1 leading-relaxed">
+                  Notice: Passcode login uses session-token mapping. Recommended for offline tests.
+                </p>
+              </div>
+            )}
+
+            {authError && (
+              <div className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl text-xs font-bold text-center">
+                {authError}
+              </div>
+            )}
+
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="w-full bg-primary text-white py-5 rounded-2xl font-black shadow-xl shadow-primary/30 hover:scale-[1.02] disabled:opacity-50 disabled:scale-100 transition-all uppercase tracking-widest text-xs"
+            >
+              {loading ? 'Authenticating...' : loginMethod === 'supabase' ? (isSignUp ? 'Create Admin Account' : 'Sign In Cloud') : 'Confirm Access'}
             </button>
           </form>
         </motion.div>
