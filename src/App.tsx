@@ -22,7 +22,7 @@ function AppContent() {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
-  // Dynamic Favicon and Auto-open appointment popup on landing
+  // Dynamic Favicon setup
   useEffect(() => {
     // Update Favicon if custom logo exists
     if (siteConfig.logo) {
@@ -31,11 +31,7 @@ function AppContent() {
         link.href = siteConfig.logo;
       }
     }
-
-    // Auto-open appointment popup on landing
-    // Removed sessionStorage guard to ensure visibility as requested by user
-    setIsOpdPopupOpen(true);
-  }, [setIsOpdPopupOpen, siteConfig.logo]);
+  }, [siteConfig.logo]);
 
   return (
     <div className="min-h-screen flex flex-col font-sans">

@@ -175,20 +175,20 @@ USING (id IS NOT NULL);
 CREATE POLICY "site_config_insert"
 ON site_config
 FOR INSERT
-TO authenticated
+TO anon, authenticated
 WITH CHECK (id IS NOT NULL);
 
 CREATE POLICY "site_config_update"
 ON site_config
 FOR UPDATE
-TO authenticated
+TO anon, authenticated
 USING (id IS NOT NULL)
 WITH CHECK (id IS NOT NULL);
 
 CREATE POLICY "site_config_delete"
 ON site_config
 FOR DELETE
-TO authenticated
+TO anon, authenticated
 USING (id IS NOT NULL);
 
 -- -------------------------
@@ -204,20 +204,20 @@ USING (id IS NOT NULL);
 CREATE POLICY "departments_insert"
 ON departments
 FOR INSERT
-TO authenticated
+TO anon, authenticated
 WITH CHECK (id IS NOT NULL);
 
 CREATE POLICY "departments_update"
 ON departments
 FOR UPDATE
-TO authenticated
+TO anon, authenticated
 USING (id IS NOT NULL)
 WITH CHECK (id IS NOT NULL);
 
 CREATE POLICY "departments_delete"
 ON departments
 FOR DELETE
-TO authenticated
+TO anon, authenticated
 USING (id IS NOT NULL);
 
 -- -------------------------
@@ -233,20 +233,20 @@ USING (id IS NOT NULL);
 CREATE POLICY "opd_doctors_insert"
 ON opd_doctors
 FOR INSERT
-TO authenticated
+TO anon, authenticated
 WITH CHECK (id IS NOT NULL);
 
 CREATE POLICY "opd_doctors_update"
 ON opd_doctors
 FOR UPDATE
-TO authenticated
+TO anon, authenticated
 USING (id IS NOT NULL)
 WITH CHECK (id IS NOT NULL);
 
 CREATE POLICY "opd_doctors_delete"
 ON opd_doctors
 FOR DELETE
-TO authenticated
+TO anon, authenticated
 USING (id IS NOT NULL);
 
 -- -------------------------
@@ -262,20 +262,20 @@ USING (id IS NOT NULL);
 CREATE POLICY "health_packages_insert"
 ON health_packages
 FOR INSERT
-TO authenticated
+TO anon, authenticated
 WITH CHECK (id IS NOT NULL);
 
 CREATE POLICY "health_packages_update"
 ON health_packages
 FOR UPDATE
-TO authenticated
+TO anon, authenticated
 USING (id IS NOT NULL)
 WITH CHECK (id IS NOT NULL);
 
 CREATE POLICY "health_packages_delete"
 ON health_packages
 FOR DELETE
-TO authenticated
+TO anon, authenticated
 USING (id IS NOT NULL);
 
 -- -------------------------
@@ -291,20 +291,20 @@ USING (id IS NOT NULL);
 CREATE POLICY "appointments_insert"
 ON appointments
 FOR INSERT
-TO authenticated
+TO anon, authenticated
 WITH CHECK (id IS NOT NULL);
 
 CREATE POLICY "appointments_update"
 ON appointments
 FOR UPDATE
-TO authenticated
+TO anon, authenticated
 USING (id IS NOT NULL)
 WITH CHECK (id IS NOT NULL);
 
 CREATE POLICY "appointments_delete"
 ON appointments
 FOR DELETE
-TO authenticated
+TO anon, authenticated
 USING (id IS NOT NULL);
 
 -- -------------------------
@@ -320,20 +320,20 @@ USING (id IS NOT NULL);
 CREATE POLICY "testimonials_insert"
 ON testimonials
 FOR INSERT
-TO authenticated
+TO anon, authenticated
 WITH CHECK (id IS NOT NULL);
 
 CREATE POLICY "testimonials_update"
 ON testimonials
 FOR UPDATE
-TO authenticated
+TO anon, authenticated
 USING (id IS NOT NULL)
 WITH CHECK (id IS NOT NULL);
 
 CREATE POLICY "testimonials_delete"
 ON testimonials
 FOR DELETE
-TO authenticated
+TO anon, authenticated
 USING (id IS NOT NULL);
 
 -- -------------------------
@@ -349,20 +349,20 @@ USING (id IS NOT NULL);
 CREATE POLICY "clinic_documents_insert"
 ON clinic_documents
 FOR INSERT
-TO authenticated
+TO anon, authenticated
 WITH CHECK (id IS NOT NULL);
 
 CREATE POLICY "clinic_documents_update"
 ON clinic_documents
 FOR UPDATE
-TO authenticated
+TO anon, authenticated
 USING (id IS NOT NULL)
 WITH CHECK (id IS NOT NULL);
 
 CREATE POLICY "clinic_documents_delete"
 ON clinic_documents
 FOR DELETE
-TO authenticated
+TO anon, authenticated
 USING (id IS NOT NULL);
 
 -- =========================================================
