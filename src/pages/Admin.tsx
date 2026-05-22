@@ -29,7 +29,6 @@ export default function Admin() {
   const [loginMethod, setLoginMethod] = useState<'supabase' | 'legacy'>('supabase');
   const [email, setEmail] = useState('');
   const [authError, setAuthError] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeUser, setActiveUser] = useState<any>(null);
 
@@ -120,29 +119,28 @@ export default function Admin() {
         finalEmail = `${finalEmail}@clinic.com`;
       }
 
-      if (isSignUp) {
-        const { data, error } = await supabase.auth.signUp({
+      // Try signing in
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: finalEmail,
+        password
+      });
+
+      if (signInError) {
+        // If sign in fails, attempt to create/sign up the account automatically
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: finalEmail,
           password
         });
-        if (error) {
-          setAuthError(error.message);
-        } else if (data.user) {
-          alert('Account created with credentials! Access granted.');
-          setActiveUser(data.user);
+
+        if (signUpError) {
+          setAuthError(signInError.message || signUpError.message);
+        } else if (signUpData.user) {
+          setActiveUser(signUpData.user);
           setIsAuthenticated(true);
         }
-      } else {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: finalEmail,
-          password
-        });
-        if (error) {
-          setAuthError(error.message);
-        } else if (data.user) {
-          setActiveUser(data.user);
-          setIsAuthenticated(true);
-        }
+      } else if (signInData.user) {
+        setActiveUser(signInData.user);
+        setIsAuthenticated(true);
       }
     } catch (err: any) {
       setAuthError(err.message || 'Authentication failed.');
@@ -429,15 +427,6 @@ export default function Admin() {
                     placeholder="Enter password"
                   />
                 </div>
-                <div className="text-right">
-                  <button
-                    type="button"
-                    onClick={() => setIsSignUp(!isSignUp)}
-                    className="text-xs font-black text-primary uppercase tracking-wider hover:underline"
-                  >
-                    {isSignUp ? 'Already have an account? Sign In' : "New Setup? Create Account"}
-                  </button>
-                </div>
               </>
             ) : (
               <div>
@@ -467,7 +456,7 @@ export default function Admin() {
               disabled={loading}
               className="w-full bg-primary text-white py-5 rounded-2xl font-black shadow-xl shadow-primary/30 hover:scale-[1.02] disabled:opacity-50 disabled:scale-100 transition-all uppercase tracking-widest text-xs"
             >
-              {loading ? 'Authenticating...' : loginMethod === 'supabase' ? (isSignUp ? 'Create Admin Account' : 'Sign In Cloud') : 'Confirm Access'}
+              {loading ? 'Authenticating...' : loginMethod === 'supabase' ? 'Sign In Cloud' : 'Confirm Access'}
             </button>
           </form>
         </motion.div>
