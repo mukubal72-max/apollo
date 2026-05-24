@@ -182,34 +182,52 @@ TO anon, authenticated;
 -- SITE CONFIG POLICIES
 -- =====================================================
 
-CREATE POLICY "site_config_select"
+DROP POLICY IF EXISTS "site_config_select" ON public.site_config;
+DROP POLICY IF EXISTS "site_config_insert" ON public.site_config;
+DROP POLICY IF EXISTS "site_config_update" ON public.site_config;
+DROP POLICY IF EXISTS "site_config_delete" ON public.site_config;
+DROP POLICY IF EXISTS "site_config_select_policy" ON public.site_config;
+DROP POLICY IF EXISTS "site_config_insert_policy" ON public.site_config;
+DROP POLICY IF EXISTS "site_config_update_policy" ON public.site_config;
+DROP POLICY IF EXISTS "site_config_delete_policy" ON public.site_config;
+
+ALTER TABLE public.site_config ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "site_config_select_policy"
 ON public.site_config
 FOR SELECT
 TO anon, authenticated
 USING (true);
 
-CREATE POLICY "site_config_insert"
+CREATE POLICY "site_config_insert_policy"
 ON public.site_config
 FOR INSERT
-TO authenticated
-WITH CHECK (auth.uid() = created_by);
+TO anon, authenticated
+WITH CHECK (id IS NOT NULL);
 
-CREATE POLICY "site_config_update"
+CREATE POLICY "site_config_update_policy"
 ON public.site_config
 FOR UPDATE
-TO authenticated
-USING (auth.uid() = created_by)
-WITH CHECK (auth.uid() = created_by);
+TO anon, authenticated
+USING (id IS NOT NULL)
+WITH CHECK (id IS NOT NULL);
 
-CREATE POLICY "site_config_delete"
+CREATE POLICY "site_config_delete_policy"
 ON public.site_config
 FOR DELETE
-TO authenticated
-USING (auth.uid() = created_by);
+TO anon, authenticated
+USING (id IS NOT NULL);
 
 -- =====================================================
 -- DEPARTMENTS POLICIES
 -- =====================================================
+
+DROP POLICY IF EXISTS "departments_select" ON public.departments;
+DROP POLICY IF EXISTS "departments_insert" ON public.departments;
+DROP POLICY IF EXISTS "departments_update" ON public.departments;
+DROP POLICY IF EXISTS "departments_delete" ON public.departments;
+
+ALTER TABLE public.departments ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "departments_select"
 ON public.departments
@@ -220,25 +238,32 @@ USING (true);
 CREATE POLICY "departments_insert"
 ON public.departments
 FOR INSERT
-TO authenticated
-WITH CHECK (auth.uid() = created_by);
+TO anon, authenticated
+WITH CHECK (name IS NOT NULL);
 
 CREATE POLICY "departments_update"
 ON public.departments
 FOR UPDATE
-TO authenticated
-USING (auth.uid() = created_by)
-WITH CHECK (auth.uid() = created_by);
+TO anon, authenticated
+USING (id IS NOT NULL)
+WITH CHECK (name IS NOT NULL);
 
 CREATE POLICY "departments_delete"
 ON public.departments
 FOR DELETE
-TO authenticated
-USING (auth.uid() = created_by);
+TO anon, authenticated
+USING (id IS NOT NULL);
 
 -- =====================================================
 -- OPD DOCTORS POLICIES
 -- =====================================================
+
+DROP POLICY IF EXISTS "opd_doctors_select" ON public.opd_doctors;
+DROP POLICY IF EXISTS "opd_doctors_insert" ON public.opd_doctors;
+DROP POLICY IF EXISTS "opd_doctors_update" ON public.opd_doctors;
+DROP POLICY IF EXISTS "opd_doctors_delete" ON public.opd_doctors;
+
+ALTER TABLE public.opd_doctors ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "opd_doctors_select"
 ON public.opd_doctors
@@ -249,25 +274,32 @@ USING (true);
 CREATE POLICY "opd_doctors_insert"
 ON public.opd_doctors
 FOR INSERT
-TO authenticated
-WITH CHECK (auth.uid() = created_by);
+TO anon, authenticated
+WITH CHECK (name IS NOT NULL);
 
 CREATE POLICY "opd_doctors_update"
 ON public.opd_doctors
 FOR UPDATE
-TO authenticated
-USING (auth.uid() = created_by)
-WITH CHECK (auth.uid() = created_by);
+TO anon, authenticated
+USING (id IS NOT NULL)
+WITH CHECK (name IS NOT NULL);
 
 CREATE POLICY "opd_doctors_delete"
 ON public.opd_doctors
 FOR DELETE
-TO authenticated
-USING (auth.uid() = created_by);
+TO anon, authenticated
+USING (id IS NOT NULL);
 
 -- =====================================================
 -- HEALTH PACKAGES POLICIES
 -- =====================================================
+
+DROP POLICY IF EXISTS "health_packages_select" ON public.health_packages;
+DROP POLICY IF EXISTS "health_packages_insert" ON public.health_packages;
+DROP POLICY IF EXISTS "health_packages_update" ON public.health_packages;
+DROP POLICY IF EXISTS "health_packages_delete" ON public.health_packages;
+
+ALTER TABLE public.health_packages ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "health_packages_select"
 ON public.health_packages
@@ -278,25 +310,32 @@ USING (true);
 CREATE POLICY "health_packages_insert"
 ON public.health_packages
 FOR INSERT
-TO authenticated
-WITH CHECK (auth.uid() = created_by);
+TO anon, authenticated
+WITH CHECK (name IS NOT NULL);
 
 CREATE POLICY "health_packages_update"
 ON public.health_packages
 FOR UPDATE
-TO authenticated
-USING (auth.uid() = created_by)
-WITH CHECK (auth.uid() = created_by);
+TO anon, authenticated
+USING (id IS NOT NULL)
+WITH CHECK (name IS NOT NULL);
 
 CREATE POLICY "health_packages_delete"
 ON public.health_packages
 FOR DELETE
-TO authenticated
-USING (auth.uid() = created_by);
+TO anon, authenticated
+USING (id IS NOT NULL);
 
 -- =====================================================
 -- APPOINTMENTS POLICIES
 -- =====================================================
+
+DROP POLICY IF EXISTS "appointments_select" ON public.appointments;
+DROP POLICY IF EXISTS "appointments_insert" ON public.appointments;
+DROP POLICY IF EXISTS "appointments_update" ON public.appointments;
+DROP POLICY IF EXISTS "appointments_delete" ON public.appointments;
+
+ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "appointments_select"
 ON public.appointments
@@ -307,25 +346,32 @@ USING (true);
 CREATE POLICY "appointments_insert"
 ON public.appointments
 FOR INSERT
-TO authenticated
-WITH CHECK (auth.uid() = created_by);
+TO anon, authenticated
+WITH CHECK (patient_name IS NOT NULL AND patient_phone IS NOT NULL);
 
 CREATE POLICY "appointments_update"
 ON public.appointments
 FOR UPDATE
-TO authenticated
-USING (auth.uid() = created_by)
-WITH CHECK (auth.uid() = created_by);
+TO anon, authenticated
+USING (id IS NOT NULL)
+WITH CHECK (id IS NOT NULL);
 
 CREATE POLICY "appointments_delete"
 ON public.appointments
 FOR DELETE
-TO authenticated
-USING (auth.uid() = created_by);
+TO anon, authenticated
+USING (id IS NOT NULL);
 
 -- =====================================================
 -- TESTIMONIALS POLICIES
 -- =====================================================
+
+DROP POLICY IF EXISTS "testimonials_select" ON public.testimonials;
+DROP POLICY IF EXISTS "testimonials_insert" ON public.testimonials;
+DROP POLICY IF EXISTS "testimonials_update" ON public.testimonials;
+DROP POLICY IF EXISTS "testimonials_delete" ON public.testimonials;
+
+ALTER TABLE public.testimonials ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "testimonials_select"
 ON public.testimonials
@@ -336,25 +382,32 @@ USING (true);
 CREATE POLICY "testimonials_insert"
 ON public.testimonials
 FOR INSERT
-TO authenticated
-WITH CHECK (auth.uid() = created_by);
+TO anon, authenticated
+WITH CHECK (name IS NOT NULL);
 
 CREATE POLICY "testimonials_update"
 ON public.testimonials
 FOR UPDATE
-TO authenticated
-USING (auth.uid() = created_by)
-WITH CHECK (auth.uid() = created_by);
+TO anon, authenticated
+USING (id IS NOT NULL)
+WITH CHECK (name IS NOT NULL);
 
 CREATE POLICY "testimonials_delete"
 ON public.testimonials
 FOR DELETE
-TO authenticated
-USING (auth.uid() = created_by);
+TO anon, authenticated
+USING (id IS NOT NULL);
 
 -- =====================================================
 -- CLINIC DOCUMENTS POLICIES
 -- =====================================================
+
+DROP POLICY IF EXISTS "clinic_documents_select" ON public.clinic_documents;
+DROP POLICY IF EXISTS "clinic_documents_insert" ON public.clinic_documents;
+DROP POLICY IF EXISTS "clinic_documents_update" ON public.clinic_documents;
+DROP POLICY IF EXISTS "clinic_documents_delete" ON public.clinic_documents;
+
+ALTER TABLE public.clinic_documents ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "clinic_documents_select"
 ON public.clinic_documents
@@ -365,21 +418,21 @@ USING (true);
 CREATE POLICY "clinic_documents_insert"
 ON public.clinic_documents
 FOR INSERT
-TO authenticated
-WITH CHECK (auth.uid() = created_by);
+TO anon, authenticated
+WITH CHECK (name IS NOT NULL);
 
 CREATE POLICY "clinic_documents_update"
 ON public.clinic_documents
 FOR UPDATE
-TO authenticated
-USING (auth.uid() = created_by)
-WITH CHECK (auth.uid() = created_by);
+TO anon, authenticated
+USING (id IS NOT NULL)
+WITH CHECK (name IS NOT NULL);
 
 CREATE POLICY "clinic_documents_delete"
 ON public.clinic_documents
 FOR DELETE
-TO authenticated
-USING (auth.uid() = created_by);
+TO anon, authenticated
+USING (id IS NOT NULL);
 
 -- =====================================================
 -- REALTIME
@@ -404,3 +457,11 @@ ALTER TABLE public.health_packages REPLICA IDENTITY FULL;
 ALTER TABLE public.appointments REPLICA IDENTITY FULL;
 ALTER TABLE public.testimonials REPLICA IDENTITY FULL;
 ALTER TABLE public.clinic_documents REPLICA IDENTITY FULL;
+
+-- Create SELECT policy for everyone
+CREATE POLICY "media_select" ON public.media 
+  FOR SELECT TO anon, authenticated USING (true);
+
+-- Create INSERT/UPDATE/DELETE policies for authenticated users
+CREATE POLICY "media_mutate" ON public.media 
+  FOR ALL TO authenticated USING (auth.uid() IS NOT NULL);

@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Check, FlaskConical, ArrowRight, ShieldCheck, Zap, X, Gift } from 'lucide-react';
 
 export default function HealthPackages() {
-  const { siteConfig, healthPackages, setIsOpdPopupOpen, setSelectedPackageId } = useAppContext();
-  const [showOffer, setShowOffer] = React.useState(!!siteConfig.promotionPopup?.enabled);
+  const { siteConfig, healthPackages, setIsOpdPopupOpen, setSelectedPackageId, isInitialLoadDone } = useAppContext();
+  const [showOffer, setShowOffer] = React.useState(false);
 
   const promo = siteConfig.promotionPopup || {
     enabled: false,
@@ -13,6 +13,17 @@ export default function HealthPackages() {
     description: "",
     offerText: ""
   };
+
+  // Only trigger promo popup when database state confirms it's enabled, with a 15-second duration
+  React.useEffect(() => {
+    if (isInitialLoadDone && promo.enabled) {
+      setShowOffer(true);
+      const timer = setTimeout(() => {
+        setShowOffer(false);
+      }, 15000);
+      return () => clearTimeout(timer);
+    }
+  }, [isInitialLoadDone, promo.enabled]);
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20 md:pt-32 pb-24">

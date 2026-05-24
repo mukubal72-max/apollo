@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import { OPDDoctor, Service, SiteConfig, Appointment, Testimonial, Department, HealthPackage, ClinicDocument } from '../types';
 import { INITIAL_OPD_SCHEDULE, INITIAL_SERVICES, SITE_CONFIG, INITIAL_TESTIMONIALS, INITIAL_DEPARTMENTS, INITIAL_HEALTH_PACKAGES } from '../constants';
 import { supabase } from '../lib/supabase';
@@ -24,6 +24,7 @@ interface AppContextType {
   setIsOpdPopupOpen: (open: boolean) => void;
   selectedPackageId: string | null;
   setSelectedPackageId: (id: string | null) => void;
+  isInitialLoadDone: boolean;
   
   // Explicit Deletions
   deleteDoctor: (id: string) => Promise<void>;
@@ -51,6 +52,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [documents, setDocuments] = useState<ClinicDocument[]>([]);
   const [isInitialLoadDone, setIsInitialLoadDone] = useState(false);
   const [siteConfigDbId, setSiteConfigDbId] = useState<string | null>(null);
+
+  // Sync refs to hold last-synced data for safe diff checks (avoids stale comparison on save clicks)
+  const syncedDoctorsRef = useRef<OPDDoctor[]>([]);
+  const syncedPackagesRef = useRef<HealthPackage[]>([]);
+  const syncedTestimonialsRef = useRef<Testimonial[]>([]);
+  const syncedDepartmentsRef = useRef<Department[]>([]);
+  const syncedDocumentsRef = useRef<ClinicDocument[]>([]);
 
   // Initial Load & Sync from Supabase
   const loadData = async () => {
@@ -84,11 +92,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (appsErr) console.error("Appointments load error:", appsErr);
 
       if (site) {
-        setSiteConfig(site.config_data as SiteConfig);
+        const fetched = site.config_data as SiteConfig;
+        const merged: SiteConfig = {
+          ...SITE_CONFIG,
+          ...fetched,
+          promotionPopup: fetched.promotionPopup ? {
+            ...SITE_CONFIG.promotionPopup!,
+            ...fetched.promotionPopup
+          } : SITE_CONFIG.promotionPopup,
+          posters: fetched.posters || SITE_CONFIG.posters || []
+        };
+        setSiteConfig(merged);
         setSiteConfigDbId(site.id);
       }
       if (docs) {
-        setOpdDoctors(docs.map(d => ({
+        const mappedDocs = docs.map(d => ({
           id: d.id,
           name: d.name,
           specialty: d.specialty,
@@ -104,10 +122,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
           expiryDate: d.expiry_date,
           fee: d.fee,
           consultationTime: d.consultation_time
-        })));
+        }));
+        setOpdDoctors(mappedDocs);
+        syncedDoctorsRef.current = mappedDocs;
       }
       if (pkgs) {
-        setHealthPackages(pkgs.map(p => ({
+        const mappedPkgs = pkgs.map(p => ({
           id: p.id,
           name: p.name,
           actualPrice: p.actual_price,
@@ -116,7 +136,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           tests: p.tests,
           discountBadge: p.discount_badge,
           description: p.description
-        })));
+        }));
+        setHealthPackages(mappedPkgs);
+        syncedPackagesRef.current = mappedPkgs;
       }
       if (apps) {
         setAppointments(apps.map(a => ({
@@ -135,21 +157,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
           finalPrice: Number(a.final_price) || 0
         })));
       }
-      if (tests) setTestimonials(tests);
+      if (tests) {
+        setTestimonials(tests);
+        syncedTestimonialsRef.current = tests;
+      }
       if (depts) {
-        setDepartments(depts.map(d => ({
+        const mappedDepts = depts.map(d => ({
           id: d.id,
           name: d.name,
           headOfDepartment: d.head_of_department,
           description: d.description
-        })));
+        }));
+        setDepartments(mappedDepts);
+        syncedDepartmentsRef.current = mappedDepts;
       }
-      if (clinicFiles) setDocuments(clinicFiles.map(f => ({
-        id: f.id,
-        name: f.name,
-        fileData: f.file_url,
-        uploadDate: f.upload_date
-      })));
+      if (clinicFiles) {
+        const mappedDocs = clinicFiles.map(f => ({
+          id: f.id,
+          name: f.name,
+          fileData: f.file_url,
+          uploadDate: f.upload_date
+        }));
+        setDocuments(mappedDocs);
+        syncedDocumentsRef.current = mappedDocs;
+      }
     } catch (e) {
       console.error("Supabase load exception:", e);
     } finally {
@@ -229,7 +260,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (syncToDb && supabase && isInitialLoadDone) {
       // Diff to only upsert new or modified doctors
       const changedOrNew = doctors.filter(newDoc => {
-        const oldDoc = oldDoctors.find(o => o.id === newDoc.id);
+        const oldDoc = syncedDoctorsRef.current.find(o => o.id === newDoc.id);
         if (!oldDoc) return true;
         return JSON.stringify(oldDoc) !== JSON.stringify(newDoc);
       });
@@ -265,6 +296,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           setOpdDoctors(oldDoctors);
           throw new Error(error.message || "Failed to sync doctors roster with database.");
         }
+        syncedDoctorsRef.current = doctors;
       }
     }
   };
@@ -275,7 +307,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (syncToDb && supabase && isInitialLoadDone) {
       // Diff to only upsert new or modified packages
       const changedOrNew = pkgs.filter(newPkg => {
-        const oldPkg = oldPkgs.find(o => o.id === newPkg.id);
+        const oldPkg = syncedPackagesRef.current.find(o => o.id === newPkg.id);
         if (!oldPkg) return true;
         return JSON.stringify(oldPkg) !== JSON.stringify(newPkg);
       });
@@ -304,6 +336,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           setHealthPackages(oldPkgs);
           throw new Error(error.message || "Failed to sync health packages with database.");
         }
+        syncedPackagesRef.current = pkgs;
       }
     }
   };
@@ -314,7 +347,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (syncToDb && supabase && isInitialLoadDone) {
       // Diff to only upsert new or modified testimonials
       const changedOrNew = tests.filter(newTest => {
-        const oldTest = oldTests.find(o => o.id === newTest.id);
+        const oldTest = syncedTestimonialsRef.current.find(o => o.id === newTest.id);
         if (!oldTest) return true;
         return JSON.stringify(oldTest) !== JSON.stringify(newTest);
       });
@@ -340,6 +373,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           setTestimonials(oldTests);
           throw new Error(error.message || "Failed to sync testimonials with database.");
         }
+        syncedTestimonialsRef.current = tests;
       }
     }
   };
@@ -350,7 +384,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (syncToDb && supabase && isInitialLoadDone) {
       // Diff to only upsert new or modified departments
       const changedOrNew = depts.filter(newDept => {
-        const oldDept = oldDepts.find(o => o.id === newDept.id);
+        const oldDept = syncedDepartmentsRef.current.find(o => o.id === newDept.id);
         if (!oldDept) return true;
         return JSON.stringify(oldDept) !== JSON.stringify(newDept);
       });
@@ -375,6 +409,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           setDepartments(oldDepts);
           throw new Error(error.message || "Failed to sync departments with database.");
         }
+        syncedDepartmentsRef.current = depts;
       }
     }
   };
@@ -385,7 +420,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (syncToDb && supabase && isInitialLoadDone) {
       // Diff to only upsert new or modified documents
       const changedOrNew = docs.filter(newDoc => {
-        const oldDoc = oldDocs.find(o => o.id === newDoc.id);
+        const oldDoc = syncedDocumentsRef.current.find(o => o.id === newDoc.id);
         if (!oldDoc) return true;
         return JSON.stringify(oldDoc) !== JSON.stringify(newDoc);
       });
@@ -410,6 +445,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           setDocuments(oldDocs);
           throw new Error(error.message || "Failed to sync clinical documents with database.");
         }
+        syncedDocumentsRef.current = docs;
       }
     }
   };
@@ -469,6 +505,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setOpdDoctors(oldDocs);
         throw new Error(error.message || "Failed to delete doctor from database.");
       }
+      syncedDoctorsRef.current = syncedDoctorsRef.current.filter(d => d.id !== id);
     }
   };
 
@@ -493,6 +530,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setHealthPackages(oldPackages);
         throw new Error(error.message || "Failed to delete health package from database.");
       }
+      syncedPackagesRef.current = syncedPackagesRef.current.filter(p => p.id !== id);
     }
   };
 
@@ -505,6 +543,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setTestimonials(oldTests);
         throw new Error(error.message || "Failed to delete testimonial from database.");
       }
+      syncedTestimonialsRef.current = syncedTestimonialsRef.current.filter(t => t.id !== id);
     }
   };
 
@@ -517,6 +556,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setDepartments(oldDepts);
         throw new Error(error.message || "Failed to delete department from database.");
       }
+      syncedDepartmentsRef.current = syncedDepartmentsRef.current.filter(d => d.id !== id);
     }
   };
 
@@ -529,6 +569,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setDocuments(oldDocs);
         throw new Error(error.message || "Failed to delete document from database.");
       }
+      syncedDocumentsRef.current = syncedDocumentsRef.current.filter(d => d.id !== id);
     }
   };
 
@@ -544,6 +585,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       documents, setDocuments: wrappedSetDocuments,
       isOpdPopupOpen, setIsOpdPopupOpen,
       selectedPackageId, setSelectedPackageId,
+      isInitialLoadDone,
       deleteDoctor,
       deleteAppointment,
       deletePackage,

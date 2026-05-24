@@ -2,15 +2,15 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, Activity, FlaskConical, HeartPulse, Stethoscope, Clock, ShieldCheck, MapPin, ChevronRight, User, Phone, Home as HomeIcon, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 
 import GoogleMap from '../components/GoogleMap';
 
 export default function Home() {
-  const { services, siteConfig, opdDoctors, setIsOpdPopupOpen, testimonials } = useAppContext();
+  const { services, siteConfig, opdDoctors, setIsOpdPopupOpen, testimonials, isInitialLoadDone } = useAppContext();
   const [selectedLetter, setSelectedLetter] = useState<string | null>('A');
   const [activeCategory, setActiveCategory] = useState<'ailments' | 'treatments' | 'technologies'>('ailments');
-  const [showPromo, setShowPromo] = useState(!!siteConfig.promotionPopup?.enabled);
+  const [showPromo, setShowPromo] = useState(false);
 
   const promo = siteConfig.promotionPopup || {
     enabled: false,
@@ -18,6 +18,17 @@ export default function Home() {
     description: "",
     offerText: ""
   };
+
+  // Only trigger promo popup when database state confirms it's enabled, with a 15-second duration
+  useEffect(() => {
+    if (isInitialLoadDone && promo.enabled) {
+      setShowPromo(true);
+      const timer = setTimeout(() => {
+        setShowPromo(false);
+      }, 15000);
+      return () => clearTimeout(timer);
+    }
+  }, [isInitialLoadDone, promo.enabled]);
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 

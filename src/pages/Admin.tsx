@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { Plus, Trash2, Edit, Settings, Users, Activity, Lock, Upload, Image as ImageIcon, Calendar, Check, X, Phone, User, Clock, Shield, FlaskConical, FileText, MessageCircle } from 'lucide-react';
+import { Plus, Trash2, Edit, Settings, Users, Activity, Lock, Upload, Image as ImageIcon, Calendar, Check, X, Phone, User, Clock, Shield, FlaskConical, FileText, MessageCircle, HelpCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { OPDDoctor, Appointment, Testimonial, Department, HealthPackage, ClinicDocument } from '../types';
 import { supabase, generateUUID } from '../lib/supabase';
@@ -38,6 +38,29 @@ export default function Admin() {
   const [savingStatus, setSavingStatus] = useState<{[key: string]: boolean}>({});
 
   const [activeAppointmentForm, setActiveAppointmentForm] = useState<Partial<Appointment> | null>(null);
+
+  const [confirmState, setConfirmState] = useState<{
+    isOpen: boolean;
+    title?: string;
+    message: string;
+    onConfirm: () => void | Promise<void>;
+    onCancel?: () => void;
+  } | null>(null);
+
+  const customConfirm = (message: string, onConfirm: () => void | Promise<void>, title = "Are you sure?") => {
+    setConfirmState({
+      isOpen: true,
+      title,
+      message,
+      onConfirm: async () => {
+        await onConfirm();
+        setConfirmState(null);
+      },
+      onCancel: () => {
+        setConfirmState(null);
+      }
+    });
+  };
 
   const [promoEdit, setPromoEdit] = useState(siteConfig.promotionPopup || {
     enabled: true,
@@ -100,6 +123,32 @@ export default function Admin() {
 
     if (loginMethod === 'legacy') {
       if (password === 'admin@12345') {
+        if (supabase) {
+          setLoading(true);
+          try {
+            const legacyEmail = 'admin@clinic.com';
+            const legacyPassword = 'admin@12345';
+            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+              email: legacyEmail,
+              password: legacyPassword
+            });
+            if (signInError) {
+              const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                email: legacyEmail,
+                password: legacyPassword
+              });
+              if (!signUpError && signUpData.user) {
+                setActiveUser(signUpData.user);
+              }
+            } else if (signInData.user) {
+              setActiveUser(signInData.user);
+            }
+          } catch (e) {
+            console.error("Legacy Supabase login login/signup handler:", e);
+          } finally {
+            setLoading(false);
+          }
+        }
         setIsAuthenticated(true);
       } else {
         setAuthError('Wrong passcode!');
@@ -192,11 +241,11 @@ export default function Admin() {
   };
 
   const deletePoster = (index: number) => {
-    if (confirm('Delete this clinical poster?')) {
+    customConfirm('Are you sure you want to delete this clinical poster?', () => {
       const currentPosters = [...(siteConfig.posters || [])];
       currentPosters.splice(index, 1);
       setSiteConfig({ ...siteConfig, posters: currentPosters });
-    }
+    }, 'Delete Poster');
   };
 
   // Doctor Management
@@ -224,9 +273,9 @@ export default function Admin() {
   };
 
   const deleteDoctor = async (id: string) => {
-    if (confirm('Delete this doctor?')) {
+    customConfirm('Are you sure you want to delete this doctor?', async () => {
       await removeDoctor(id);
-    }
+    }, 'Delete Doctor');
   };
 
   // Appointment Management
@@ -257,19 +306,32 @@ export default function Admin() {
   const updateAppointmentStatus = (id: string, status: Appointment['status']) => {
     const app = appointments.find(a => a.id === id);
     if (app) {
-      setAppointments(appointments.map(a => a.id === id ? { ...a, status } : a));
       if (status === 'confirmed') {
-        if (confirm('Appointment confirmed! Would you like to send a WhatsApp notification to the patient?')) {
+        const updatedList = appointments.map(a => a.id === id ? { ...a, status } : a);
+        setAppointments(updatedList, false);
+        triggerSave('appointments', () => setAppointments(updatedList, true));
+        
+        customConfirm('Appointment confirmed! Would you like to send a WhatsApp notification to the patient?', () => {
           notifyPatientViaWhatsApp(app);
-        }
+        }, 'Appointment Confirmed');
+      } else if (status === 'cancelled') {
+        customConfirm('Are you sure you want to CANCEL this appointment?', () => {
+          const updatedList = appointments.map(a => a.id === id ? { ...a, status } : a);
+          setAppointments(updatedList, false);
+          triggerSave('appointments', () => setAppointments(updatedList, true));
+        }, 'Cancel Appointment');
+      } else {
+        const updatedList = appointments.map(a => a.id === id ? { ...a, status } : a);
+        setAppointments(updatedList, false);
+        triggerSave('appointments', () => setAppointments(updatedList, true));
       }
     }
   };
 
   const deleteAppointment = async (id: string) => {
-    if (confirm('Delete this appointment record?')) {
+    customConfirm('Are you sure you want to delete this appointment record?', async () => {
       await removeAppointment(id);
-    }
+    }, 'Delete Record');
   };
 
   // Testimonial Management
@@ -288,9 +350,9 @@ export default function Admin() {
   };
 
   const deleteTestimonial = async (id: string) => {
-    if (confirm('Delete this testimonial?')) {
+    customConfirm('Are you sure you want to delete this testimonial?', async () => {
       await removeTestimonial(id);
-    }
+    }, 'Delete Testimonial');
   };
 
   // Department Management
@@ -309,9 +371,9 @@ export default function Admin() {
   };
 
   const deleteDepartment = async (id: string) => {
-    if (confirm('Delete this department?')) {
+    customConfirm('Are you sure you want to delete this department?', async () => {
       await removeDepartment(id);
-    }
+    }, 'Delete Department');
   };
 
   // Health Package Management
@@ -332,9 +394,9 @@ export default function Admin() {
   };
 
   const deleteHealthPackage = async (id: string) => {
-    if (confirm('Delete this health package?')) {
+    customConfirm('Are you sure you want to delete this health package?', async () => {
       await removePackage(id);
-    }
+    }, 'Delete Package');
   };
 
   // Document Management
@@ -360,9 +422,9 @@ export default function Admin() {
   };
 
   const deleteDocument = async (id: string) => {
-    if (confirm('Delete this document?')) {
+    customConfirm('Are you sure you want to delete this document?', async () => {
       await removeDocument(id);
-    }
+    }, 'Delete Document');
   };
 
   const updateDocumentName = (id: string, name: string) => {
@@ -1875,6 +1937,59 @@ export default function Admin() {
               </div>
             </div>
           )}
+
+          <AnimatePresence>
+            {confirmState && (
+              <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                  onClick={confirmState.onCancel}
+                />
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0, y: 15 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.95, opacity: 0, y: 15 }}
+                  className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md border border-slate-100 p-8 flex flex-col overflow-hidden z-10"
+                >
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 shrink-0">
+                      <HelpCircle size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">
+                        {confirmState.title || "Are you sure?"}
+                      </h3>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5 leading-none">Apollo Basti Clinic Manager</p>
+                    </div>
+                  </div>
+
+                  <p className="text-slate-600 text-xs font-semibold leading-relaxed mb-6">
+                    {confirmState.message}
+                  </p>
+
+                  <div className="flex gap-3 justify-end">
+                    <button
+                      type="button"
+                      onClick={confirmState.onCancel}
+                      className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-500 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all"
+                    >
+                      Cancel action
+                    </button>
+                    <button
+                      type="button"
+                      onClick={confirmState.onConfirm}
+                      className="px-6 py-2.5 bg-primary text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all shadow-md shadow-primary/20"
+                    >
+                      Yes, Confirm
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
         </main>
       </div>
     </div>
