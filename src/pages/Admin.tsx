@@ -36,6 +36,7 @@ export default function Admin() {
   const logoInputRef = useRef<HTMLInputElement>(null);
   const posterInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const [savingStatus, setSavingStatus] = useState<{[key: string]: boolean}>({});
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -260,6 +261,19 @@ export default function Admin() {
       currentPosters.splice(index, 1);
       setSiteConfig({ ...siteConfig, posters: currentPosters });
     }, 'Delete Poster');
+  };
+
+  const addGalleryImage = (base64: string) => {
+    const currentGallery = siteConfig.gallery || [];
+    setSiteConfig({ ...siteConfig, gallery: [...currentGallery, base64], defaultGalleryDisabled: true });
+  };
+
+  const deleteGalleryImage = (index: number) => {
+    customConfirm('Are you sure you want to delete this gallery image?', () => {
+      const currentGallery = [...(siteConfig.gallery || [])];
+      currentGallery.splice(index, 1);
+      setSiteConfig({ ...siteConfig, gallery: currentGallery });
+    }, 'Delete Image');
   };
 
   // Doctor Management
@@ -675,153 +689,256 @@ export default function Admin() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="bg-white rounded-3xl shadow-xl border border-slate-100 p-8"
+                className="space-y-8"
               >
+                {/* Clinic Configuration Card */}
+                <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-8">
                   <div className="flex items-center gap-4">
                     <h2 className="text-2xl font-black text-slate-900 mb-8 uppercase tracking-tighter font-display">Clinic Configuration</h2>
                     {savingStatus['site'] && <span className="text-[10px] font-black text-green-500 uppercase tracking-widest bg-green-50 px-3 py-1 rounded-full mb-8">Changes Saved!</span>}
                   </div>
                 
-                <div className="grid gap-10">
-                  <div className="grid md:grid-cols-2 gap-8">
-                    {/* Logo Section */}
-                    <div className="bg-slate-50 p-8 rounded-3xl border border-slate-200 flex flex-col justify-between">
-                      <div>
-                        <h3 className="text-sm font-black uppercase text-slate-400 tracking-widest mb-6">Clinic Logo</h3>
-                        <div className="flex flex-col sm:flex-row items-center gap-8">
-                          <div className="w-32 h-32 bg-white rounded-2xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden">
-                            {(siteConfig.logo || "https://www.apolloclinic.com/assets/images/logo.png") ? (
-                              <img 
-                                src={siteConfig.logo || "https://www.apolloclinic.com/assets/images/logo.png"} 
-                                alt="Clinic Logo" 
-                                className={`w-full h-full object-contain p-2 ${!siteConfig.logo ? 'opacity-30 grayscale' : ''}`} 
-                              />
-                            ) : (
-                              <ImageIcon className="text-slate-200" size={48} />
-                            )}
-                          </div>
-                          <div className="space-y-4">
-                            {!siteConfig.logo && <p className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">Showing Default Apollo Logo</p>}
-                            <input 
-                              type="file" 
-                              hidden 
-                              ref={logoInputRef}
-                              accept="image/*"
-                              onChange={(e) => handleImageUpload(e, (b64) => setSiteConfig({...siteConfig, logo: b64}))}
-                            />
-                            <button 
-                              onClick={() => logoInputRef.current?.click()}
-                              className="px-6 py-3 bg-white border border-slate-200 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-100 transition-all shadow-sm text-xs uppercase"
-                            >
-                              <Upload size={18} /> Upload New Logo
-                            </button>
-                            <p className="text-[10px] text-slate-400">Recommended: Transparent PNG, under 200KB.</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Homepage Hero Banner Section */}
-                    <div className="bg-slate-50 p-8 rounded-3xl border border-slate-200 flex flex-col justify-between">
-                      <div>
-                        <h3 className="text-sm font-black uppercase text-slate-400 tracking-widest mb-6 font-display">Homepage Hero Banner</h3>
-                        <div className="flex flex-col sm:flex-row items-center gap-8">
-                          <div className="w-48 h-32 bg-white rounded-2xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden relative shadow-inner">
-                            <img 
-                              src={siteConfig.heroBanner || heroBannerImage} 
-                              alt="Homepage Hero Banner" 
-                              className="w-full h-full object-cover p-1 rounded-2xl" 
-                            />
-                          </div>
-                          <div className="space-y-4 flex-grow">
-                            {!siteConfig.heroBanner ? (
-                              <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest">Showing Pre-generated Basti Banner</p>
-                            ) : (
-                              <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Showing Your Custom Banner</p>
-                            )}
-                            <input 
-                              type="file" 
-                              hidden 
-                              ref={bannerInputRef}
-                              accept="image/*"
-                              onChange={(e) => handleImageUpload(e, (b64) => setSiteConfig({...siteConfig, heroBanner: b64}))}
-                            />
-                            <div className="flex flex-wrap gap-2">
-                              <button 
-                                onClick={() => bannerInputRef.current?.click()}
-                                className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold flex items-center gap-1.5 hover:bg-slate-100 transition-all shadow-sm text-[10px] uppercase text-slate-700"
-                              >
-                                <Upload size={14} /> Upload Banner
-                              </button>
-                              {siteConfig.heroBanner && (
-                                <button 
-                                  onClick={() => setSiteConfig({...siteConfig, heroBanner: undefined})}
-                                  className="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 rounded-xl font-bold flex items-center gap-1.5 transition-all shadow-sm text-[10px] uppercase"
-                                >
-                                  <Trash2 size={13} /> Reset
-                                </button>
+                  <div className="grid gap-10">
+                    <div className="grid md:grid-cols-2 gap-8">
+                      {/* Logo Section */}
+                      <div className="bg-slate-50 p-8 rounded-3xl border border-slate-200 flex flex-col justify-between">
+                        <div>
+                          <h3 className="text-sm font-black uppercase text-slate-400 tracking-widest mb-6">Clinic Logo</h3>
+                          <div className="flex flex-col sm:flex-row items-center gap-8">
+                            <div className="w-32 h-32 bg-white rounded-2xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden">
+                              {(siteConfig.logo || "https://www.apolloclinic.com/assets/images/logo.png") ? (
+                                <img 
+                                  src={siteConfig.logo || "https://www.apolloclinic.com/assets/images/logo.png"} 
+                                  alt="Clinic Logo" 
+                                  className={`w-full h-full object-contain p-2 ${!siteConfig.logo ? 'opacity-30 grayscale' : ''}`} 
+                                />
+                              ) : (
+                                <ImageIcon className="text-slate-200" size={48} />
                               )}
                             </div>
-                            <p className="text-[10px] text-slate-400">File must be under 800KB. Ideal aspect ratio: 21:9.</p>
+                            <div className="space-y-4">
+                              {!siteConfig.logo && <p className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">Showing Default Apollo Logo</p>}
+                              <input 
+                                type="file" 
+                                hidden 
+                                ref={logoInputRef}
+                                accept="image/*"
+                                onChange={(e) => handleImageUpload(e, (b64) => setSiteConfig({...siteConfig, logo: b64}))}
+                              />
+                              <button 
+                                onClick={() => logoInputRef.current?.click()}
+                                className="px-6 py-3 bg-white border border-slate-200 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-100 transition-all shadow-sm text-xs uppercase"
+                              >
+                                <Upload size={18} /> Upload New Logo
+                              </button>
+                              <p className="text-[10px] text-slate-400">Recommended: Transparent PNG, under 200KB.</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Homepage Hero Banner Section */}
+                      <div className="bg-slate-50 p-8 rounded-3xl border border-slate-200 flex flex-col justify-between">
+                        <div>
+                          <h3 className="text-sm font-black uppercase text-slate-400 tracking-widest mb-6 font-display">Homepage Hero Banner</h3>
+                          <div className="flex flex-col sm:flex-row items-center gap-8">
+                            <div className="w-48 h-32 bg-white rounded-2xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden relative shadow-inner">
+                              <img 
+                                src={siteConfig.heroBanner || heroBannerImage} 
+                                alt="Homepage Hero Banner" 
+                                className="w-full h-full object-cover p-1 rounded-2xl" 
+                              />
+                            </div>
+                            <div className="space-y-4 flex-grow">
+                              {!siteConfig.heroBanner ? (
+                                <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest">Showing Pre-generated Basti Banner</p>
+                              ) : (
+                                <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Showing Your Custom Banner</p>
+                              )}
+                              <input 
+                                type="file" 
+                                hidden 
+                                ref={bannerInputRef}
+                                accept="image/*"
+                                onChange={(e) => handleImageUpload(e, (b64) => setSiteConfig({...siteConfig, heroBanner: b64}))}
+                              />
+                              <div className="flex flex-wrap gap-2">
+                                <button 
+                                  onClick={() => bannerInputRef.current?.click()}
+                                  className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold flex items-center gap-1.5 hover:bg-slate-100 transition-all shadow-sm text-[10px] uppercase text-slate-700"
+                                >
+                                  <Upload size={14} /> Upload Banner
+                                </button>
+                                {siteConfig.heroBanner && (
+                                  <button 
+                                    onClick={() => setSiteConfig({...siteConfig, heroBanner: undefined})}
+                                    className="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 rounded-xl font-bold flex items-center gap-1.5 transition-all shadow-sm text-[10px] uppercase"
+                                  >
+                                    <Trash2 size={13} /> Reset
+                                  </button>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-slate-400">File must be under 800KB. Ideal aspect ratio: 21:9.</p>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
+
+                    {/* General Info */}
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-xs font-black uppercase text-slate-400">Clinic Name</label>
+                        <input 
+                          value={siteConfig.name}
+                          onChange={(e) => setSiteConfig({ ...siteConfig, name: e.target.value }, false)}
+                          className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-black uppercase text-slate-400">Location Display</label>
+                        <input 
+                          value={siteConfig.location}
+                          onChange={(e) => setSiteConfig({ ...siteConfig, location: e.target.value }, false)}
+                          className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-black uppercase text-slate-400">Emergency Contact</label>
+                        <input 
+                          value={siteConfig.contact}
+                          onChange={(e) => setSiteConfig({ ...siteConfig, contact: e.target.value }, false)}
+                          className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-black uppercase text-slate-400">Public Email</label>
+                        <input 
+                          value={siteConfig.email ?? ""}
+                          onChange={(e) => setSiteConfig({ ...siteConfig, email: e.target.value }, false)}
+                          className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-black uppercase text-slate-400">Footer Owner / Copyright Owner</label>
+                        <input 
+                          value={siteConfig.footerOwner ?? ""}
+                          placeholder="e.g., Apollo Clinic Basti"
+                          onChange={(e) => setSiteConfig({ ...siteConfig, footerOwner: e.target.value }, false)}
+                          className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="pt-8 border-t border-slate-100 flex justify-end">
+                      <button 
+                        onClick={() => triggerSave('site', () => setSiteConfig(siteConfig, true))}
+                        className="bg-primary text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-all"
+                      >
+                        {savingStatus['site'] ? 'Successfully Saved' : 'Save Configuration'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Clinic Gallery & Infrastructure Photo Directory */}
+                <div id="gallery-management-section" className="bg-white rounded-3xl shadow-xl border border-slate-100 p-8">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                    <div>
+                      <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter font-display">Gallery & Facilities Photos</h2>
+                      <p className="text-xs text-slate-400 font-bold uppercase mt-1">Upload and arrange photographs shown in the visual Tour page</p>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <input 
+                        type="file" 
+                        hidden 
+                        ref={galleryInputRef}
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => {
+                          const files = e.target.files;
+                          if (files) {
+                            Array.from(files).forEach((file: File) => {
+                              if (file.size > 5000000) {
+                                showToast(`${file.name} is too large! Max file size limit is 5MB.`, 'error');
+                                return;
+                              }
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                if (typeof reader.result === 'string') {
+                                  addGalleryImage(reader.result);
+                                }
+                              };
+                              reader.readAsDataURL(file);
+                            });
+                          }
+                        }}
+                      />
+                      <button 
+                        onClick={() => galleryInputRef.current?.click()}
+                        className="px-6 py-3.5 bg-secondary hover:bg-secondary/95 text-white rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg text-xs uppercase"
+                      >
+                        <Upload size={16} /> Upload New Photos
+                      </button>
+                    </div>
                   </div>
 
-                  {/* General Info */}
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase text-slate-400">Clinic Name</label>
-                      <input 
-                        value={siteConfig.name}
-                        onChange={(e) => setSiteConfig({ ...siteConfig, name: e.target.value }, false)}
-                        className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
-                      />
+                  {(!siteConfig.gallery || siteConfig.gallery.length === 0) ? (
+                    <div className="p-12 text-center border-2 border-dashed border-slate-200 rounded-[2rem] bg-slate-50 flex flex-col items-center justify-center gap-4">
+                      <div className="w-16 h-16 rounded-full bg-slate-150 flex items-center justify-center text-slate-400">
+                        <ImageIcon size={32} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">No Custom Gallery Photos Uploaded</p>
+                        <p className="text-[10px] text-slate-400 max-w-sm uppercase font-semibold mx-auto leading-relaxed">
+                          The live &ldquo;Visual Tour&rdquo; page is currently using our pre-generated beautiful clinic infrastructure and advanced lab images by default.
+                        </p>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase text-slate-400">Location Display</label>
-                      <input 
-                        value={siteConfig.location}
-                        onChange={(e) => setSiteConfig({ ...siteConfig, location: e.target.value }, false)}
-                        className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
-                      />
+                  ) : (
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {siteConfig.gallery.map((img, i) => (
+                          <div 
+                            key={i} 
+                            className="group relative aspect-[4/3] rounded-2xl overflow-hidden border border-slate-200 shadow-sm bg-slate-150"
+                          >
+                            <img src={img} alt={`Gallery ${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-550" />
+                            <div className="absolute inset-0 bg-slate-950/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                              <button 
+                                onClick={() => deleteGalleryImage(i)}
+                                className="p-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl transition-all hover:scale-110 active:scale-90"
+                                title="Delete Photo"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                            <div className="absolute bottom-2 left-2 bg-slate-950/50 backdrop-blur-sm px-2 py-1 rounded-md">
+                              <span className="text-[9px] font-black uppercase text-white tracking-widest">Image #{i + 1}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="pt-6 border-t border-slate-100 flex justify-between items-center">
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                          Total Photos: {siteConfig.gallery.length} &bull; Autocommitted to configuration.
+                        </p>
+                        <button 
+                          onClick={() => {
+                            customConfirm('Are you sure you want to clear all custom clinic photos and restore default visual assets?', () => {
+                              setSiteConfig({ ...siteConfig, gallery: [] });
+                              showToast('Gallery restored to pre-generated default assets.', 'info');
+                            }, 'Reset Gallery');
+                          }}
+                          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[10px] uppercase font-bold tracking-wider"
+                        >
+                          Restore Default Assets
+                        </button>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase text-slate-400">Emergency Contact</label>
-                      <input 
-                        value={siteConfig.contact}
-                        onChange={(e) => setSiteConfig({ ...siteConfig, contact: e.target.value }, false)}
-                        className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase text-slate-400">Public Email</label>
-                      <input 
-                        value={siteConfig.email ?? ""}
-                        onChange={(e) => setSiteConfig({ ...siteConfig, email: e.target.value }, false)}
-                        className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-black uppercase text-slate-400">Footer Owner / Copyright Owner</label>
-                      <input 
-                        value={siteConfig.footerOwner ?? ""}
-                        placeholder="e.g., Apollo Clinic Basti"
-                        onChange={(e) => setSiteConfig({ ...siteConfig, footerOwner: e.target.value }, false)}
-                        className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="pt-8 border-t border-slate-100 flex justify-end">
-                    <button 
-                      onClick={() => triggerSave('site', () => setSiteConfig(siteConfig, true))}
-                      className="bg-primary text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 transition-all"
-                    >
-                      {savingStatus['site'] ? 'Successfully Saved' : 'Save Configuration'}
-                    </button>
-                  </div>
+                  )}
                 </div>
               </motion.div>
             )}

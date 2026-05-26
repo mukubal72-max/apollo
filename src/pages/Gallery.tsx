@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'motion/react';
+import { useAppContext } from '../context/AppContext';
 
 export default function Gallery() {
-  const images = [
+  const { siteConfig } = useAppContext();
+
+  const fallbackImages = [
     "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=800",
     "https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&q=80&w=800",
     "https://images.unsplash.com/photo-1581595221475-ad663b52bc5b?auto=format&fit=crop&q=80&w=800",
@@ -10,6 +13,13 @@ export default function Gallery() {
     "https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&q=80&w=800",
     "https://images.unsplash.com/photo-1538108197017-c1a986ded3d7?auto=format&fit=crop&q=80&w=800",
   ];
+
+  const images = useMemo(() => {
+    if (siteConfig.gallery && siteConfig.gallery.length > 0) {
+      return siteConfig.gallery;
+    }
+    return fallbackImages;
+  }, [siteConfig.gallery]);
 
   return (
     <div className="min-h-screen bg-slate-50 pt-20 md:pt-32 pb-24">

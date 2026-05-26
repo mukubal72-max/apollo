@@ -91,4 +91,6 @@ export interface SiteConfig {
   promotionPopup?: PromotionPopup;
   heroBanner?: string; // Base64 or URL for the homepage hero banner
   footerOwner?: string; // Custom footer owner name or copyright name
+  gallery?: string[]; // Array of Base64 or URLs for the facility gallery
+  defaultGalleryDisabled?: boolean; // Turn off default pre-generated fallback images if desired
 }
