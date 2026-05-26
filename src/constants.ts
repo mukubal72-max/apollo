@@ -5,6 +5,7 @@ export const SITE_CONFIG: SiteConfig = {
   location: "APOLLO CLINIC BASTI, Station Road, Basti - 272002",
   contact: "8004055501, 05542451088",
   email: "info@apollobasti.com",
+  footerOwner: "Apollo Clinic Basti",
   promotionPopup: {
     enabled: true,
     title: "10% OFF ON HOME COLLECTION",

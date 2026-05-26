@@ -38,6 +38,18 @@ export default function Admin() {
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
   const [savingStatus, setSavingStatus] = useState<{[key: string]: boolean}>({});
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({ message, type });
+  };
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   const [activeAppointmentForm, setActiveAppointmentForm] = useState<Partial<Appointment> | null>(null);
 
@@ -108,7 +120,7 @@ export default function Admin() {
         setSavingStatus({ ...savingStatus, [tab]: false });
       }, 1500);
     } catch (e: any) {
-      alert('Save failed: ' + (e.message || e));
+      showToast('Save failed: ' + (e.message || e), 'error');
       setSavingStatus({ ...savingStatus, [tab]: false });
     }
   };
@@ -226,7 +238,7 @@ export default function Admin() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5000000) { // 5MB limit for posters/banners
-        alert('File is too large! Please upload an image smaller than 5MB.');
+        showToast('File is too large! Please upload an image smaller than 5MB.', 'error');
         return;
       }
       const reader = new FileReader();
@@ -406,7 +418,7 @@ export default function Admin() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2000000) { // 2MB limit
-        alert('File is too large! Please upload a file smaller than 2MB.');
+        showToast('File is too large! Please upload a file smaller than 2MB.', 'error');
         return;
       }
       const reader = new FileReader();
@@ -786,8 +798,17 @@ export default function Admin() {
                     <div className="space-y-2">
                       <label className="text-xs font-black uppercase text-slate-400">Public Email</label>
                       <input 
-                        value={siteConfig.email}
+                        value={siteConfig.email ?? ""}
                         onChange={(e) => setSiteConfig({ ...siteConfig, email: e.target.value }, false)}
+                        className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase text-slate-400">Footer Owner / Copyright Owner</label>
+                      <input 
+                        value={siteConfig.footerOwner ?? ""}
+                        placeholder="e.g., Apollo Clinic Basti"
+                        onChange={(e) => setSiteConfig({ ...siteConfig, footerOwner: e.target.value }, false)}
                         className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary outline-none"
                       />
                     </div>
@@ -1513,7 +1534,7 @@ export default function Admin() {
                           <button 
                             onClick={() => {
                               setSiteConfig({...siteConfig, heroBanner: poster});
-                              alert("Successfully set this image as the Homepage Hero Banner! It is now live on the Home page.");
+                              showToast("Successfully set this image as the Homepage Hero Banner! It is now live on the Home page.", "success");
                             }}
                             className="w-full py-3 bg-secondary text-white rounded-xl font-bold hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-1.5 text-[10px] uppercase shadow-lg border border-secondary"
                           >
@@ -1956,7 +1977,7 @@ export default function Admin() {
                   <button 
                     onClick={() => {
                       if (!activeAppointmentForm.patientName || !activeAppointmentForm.patientPhone || !activeAppointmentForm.doctorId || !activeAppointmentForm.date) {
-                        alert("Please fill in core Patient Details: Name, Phone, Doctor/Package and Date.");
+                        showToast("Please fill in core Patient Details: Name, Phone, Doctor/Package and Date.", "error");
                         return;
                       }
 
@@ -2055,6 +2076,39 @@ export default function Admin() {
           </AnimatePresence>
         </main>
       </div>
+
+      {/* Floating Status Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div 
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-8 right-8 z-50 max-w-md"
+          >
+            <div className={`p-5 rounded-[2rem] shadow-2xl border flex items-start gap-4 ${
+              toast.type === 'success' 
+                ? 'bg-slate-900 border-slate-800 text-teal-400' 
+                : toast.type === 'error'
+                ? 'bg-rose-950 border-rose-900 text-rose-200'
+                : 'bg-slate-900 border-slate-800 text-orange-400'
+            }`}>
+              <div className="flex-grow">
+                <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Administrative Alert</p>
+                <div className="text-white text-xs font-bold uppercase tracking-wide leading-relaxed">
+                  {toast.message}
+                </div>
+              </div>
+              <button 
+                onClick={() => setToast(null)} 
+                className="hover:bg-white/10 p-1.5 rounded-xl text-slate-400 hover:text-white transition-all shrink-0 mt-0.5"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

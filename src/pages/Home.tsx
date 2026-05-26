@@ -13,6 +13,46 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState<'ailments' | 'treatments' | 'technologies'>('ailments');
   const [showPromo, setShowPromo] = useState(false);
 
+  // Dynamic header banners slider logic
+  const banners = useMemo(() => {
+    const list: string[] = [];
+    
+    // 1. Post any uploaded posters/banners from database config if available
+    if (siteConfig.posters && siteConfig.posters.length > 0) {
+      list.push(...siteConfig.posters);
+    }
+    
+    // 2. Add heroBanner if explicitly configured, otherwise fall back to pre-generated Basti banner
+    if (siteConfig.heroBanner) {
+      if (!list.includes(siteConfig.heroBanner)) {
+        list.splice(0, 0, siteConfig.heroBanner);
+      }
+    } else {
+      if (!list.includes(heroBannerImage)) {
+        list.push(heroBannerImage);
+      }
+    }
+    return list;
+  }, [siteConfig.posters, siteConfig.heroBanner]);
+
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Reset slide if list bounds change
+  useEffect(() => {
+    if (currentSlide >= banners.length) {
+      setCurrentSlide(0);
+    }
+  }, [banners.length, currentSlide]);
+
+  // Automatically cycle through slides every 5 seconds
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % banners.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [banners.length]);
+
   const promo = siteConfig.promotionPopup || {
     enabled: false,
     title: "",
@@ -171,14 +211,38 @@ export default function Home() {
         )}
       </AnimatePresence>
       {/* Hero Section */}
-      <section className="relative overflow-hidden mx-4 md:mx-8 mt-4 md:mt-8 rounded-[2rem] md:rounded-[3.5rem] shadow-2xl group bg-slate-900 border border-slate-100">
-        <div className="w-full aspect-[4/3] sm:aspect-[21/9] relative z-0">
-          <img 
-            src={siteConfig.heroBanner || heroBannerImage} 
-            className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-            alt="Apollo Clinical Excellence Basti"
-            referrerPolicy="no-referrer"
-          />
+      <section className="relative overflow-hidden mx-4 md:mx-8 mt-4 md:mt-8 rounded-[2rem] md:rounded-[3.5rem] shadow-2xl group bg-slate-100 border border-slate-150">
+        <div className="w-full aspect-[4/3] sm:aspect-[21/9] relative z-0 overflow-hidden min-h-[200px] sm:min-h-[320px]">
+          <AnimatePresence mode="wait">
+            <motion.img 
+              key={currentSlide}
+              src={banners[currentSlide]} 
+              initial={{ opacity: 0, scale: 1.02 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="absolute inset-0 w-full h-full object-cover"
+              alt={`Apollo Clinical Excellence Slide ${currentSlide + 1}`}
+              referrerPolicy="no-referrer"
+            />
+          </AnimatePresence>
+
+          {/* Subtle overlay */}
+          <div className="absolute inset-0 bg-slate-950/5 pointer-events-none" />
+
+          {/* Navigation Dots if multiple slides */}
+          {banners.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2 bg-slate-900/30 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
+              {banners.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentSlide(index)}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${index === currentSlide ? 'bg-secondary w-5' : 'bg-white/55 hover:bg-white'}`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
         
         {/* Floating Book Appointment button positioned over the banner */}
@@ -199,7 +263,7 @@ export default function Home() {
             { label: 'Home Collection Centre', icon: FlaskConical, desc: 'Convenient lab testings at home' },
             { label: 'Day Care Support', icon: Activity, desc: 'Advanced day care facilities' },
             { label: 'Health @ Home', icon: HomeIcon, desc: 'Personalized clinical support' },
-            { label: 'Matanhelia Family', icon: HeartPulse, desc: 'Trusted family care legacy' }
+            { label: siteConfig.footerOwner || 'Apollo Clinic Basti', icon: HeartPulse, desc: 'Trusted family care legacy' }
           ].map((item, i) => (
             <div key={i} className="flex items-center gap-4 group p-3 hover:bg-white rounded-2xl transition-all duration-300 border border-transparent hover:border-slate-150 hover:shadow-sm">
               <div className="w-12 h-12 rounded-xl bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">

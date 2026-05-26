@@ -90,4 +90,5 @@ export interface SiteConfig {
   posters?: string[]; // Array of Base64 strings for clinical posters
   promotionPopup?: PromotionPopup;
   heroBanner?: string; // Base64 or URL for the homepage hero banner
+  footerOwner?: string; // Custom footer owner name or copyright name
 }

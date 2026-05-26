@@ -131,7 +131,7 @@ function AppContent() {
 
           <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="flex flex-col gap-1">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">&copy; {new Date().getFullYear()} Apollo Clinic Basti. Matanhelia Family.</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">&copy; {new Date().getFullYear()} Apollo Clinic Basti. {siteConfig.footerOwner || "Apollo Clinic Basti"}.</p>
               <p className="text-[9px] font-bold uppercase tracking-widest text-white/40">Powered by Digital Communique Private Limited</p>
             </div>
             <div className="flex gap-8 uppercase font-bold text-[10px] tracking-widest">
