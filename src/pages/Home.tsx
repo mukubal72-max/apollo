@@ -211,21 +211,32 @@ export default function Home() {
         )}
       </AnimatePresence>
       {/* Hero Section */}
-      <section className="relative overflow-hidden mx-4 md:mx-8 mt-4 md:mt-8 rounded-[2rem] md:rounded-[3.5rem] shadow-2xl group bg-slate-100 border border-slate-150">
-        <div className="w-full aspect-[4/3] sm:aspect-[21/9] relative z-0 overflow-hidden min-h-[200px] sm:min-h-[320px]">
-          <AnimatePresence mode="wait">
-            <motion.img 
-              key={currentSlide}
-              src={banners[currentSlide]} 
-              initial={{ opacity: 0, scale: 1.02 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.5, ease: "easeInOut" }}
-              className="absolute inset-0 w-full h-full object-cover"
-              alt={`Apollo Clinical Excellence Slide ${currentSlide + 1}`}
+      <section className="relative overflow-hidden mx-4 md:mx-8 mt-4 md:mt-8 rounded-[2rem] md:rounded-[3.5rem] shadow-2xl group bg-slate-50 border border-slate-150">
+        <div className="w-full relative z-0 overflow-hidden">
+          {banners.length > 0 && (
+            <img 
+              src={banners[0]} 
+              className="w-full h-auto opacity-0 pointer-events-none block" 
+              alt="Sizer" 
               referrerPolicy="no-referrer"
             />
-          </AnimatePresence>
+          )}
+          
+          <div className="absolute inset-0">
+            <AnimatePresence mode="wait">
+              <motion.img 
+                key={currentSlide}
+                src={banners[currentSlide]} 
+                initial={{ opacity: 0, scale: 1.01 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.99 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+                className="w-full h-full object-cover"
+                alt={`Apollo Clinical Excellence Slide ${currentSlide + 1}`}
+                referrerPolicy="no-referrer"
+              />
+            </AnimatePresence>
+          </div>
 
           {/* Subtle overlay */}
           <div className="absolute inset-0 bg-slate-950/5 pointer-events-none" />
@@ -246,7 +257,7 @@ export default function Home() {
         </div>
         
         {/* Floating Book Appointment button positioned over the banner */}
-        <div className="absolute bottom-4 right-4 sm:bottom-8 sm:right-8 md:bottom-12 md:right-12 z-20">
+        <div className="absolute bottom-[24%] right-4 sm:bottom-[28%] sm:right-8 md:bottom-[30%] md:right-12 lg:right-16 z-20">
           <button 
             onClick={() => setIsOpdPopupOpen(true)}
             className="px-6 py-3 sm:px-10 sm:py-5 bg-secondary text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-secondary/30 hover:scale-105 active:scale-95 transition-all cursor-pointer text-xs sm:text-sm"
