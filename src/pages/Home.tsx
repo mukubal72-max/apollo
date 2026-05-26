@@ -278,38 +278,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Clinical Posters / Banners Section */}
-      {siteConfig.posters && siteConfig.posters.length > 0 && (
-        <section className="container mx-auto px-8 mb-32">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
-            <div className="max-w-xl">
-              <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tighter uppercase font-display">Clinical Insights</h2>
-              <p className="text-slate-500 font-medium leading-relaxed">
-                Stay informed with our latest health clinical updates and super-specialist visiting schedules at Apollo Basti.
-              </p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-            {siteConfig.posters.map((poster, i) => (
-              <motion.div 
-                key={i}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="group relative rounded-[3.5rem] overflow-hidden shadow-2xl border border-slate-100 bg-white"
-              >
-                <img src={poster} alt="Health Campaign" className="w-full h-auto object-cover group-hover:scale-105 transition-all duration-700" />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-8">
-                  <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-primary shadow-xl">
-                    <Activity size={24} />
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-      )}
+
 
       {/* Services Section */}
       <section className="container mx-auto px-8">
