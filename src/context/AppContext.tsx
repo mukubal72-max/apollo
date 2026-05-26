@@ -239,17 +239,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const oldConfig = siteConfig;
     setSiteConfig(config);
     if (syncToDb && supabase && isInitialLoadDone) {
-      const idToUse = siteConfigDbId || '00000000-0000-0000-0000-000000000001';
-      const { data: { user } } = await supabase.auth.getUser();
-      const payload: any = { id: idToUse, config_data: config };
-      if (user) {
-        payload.created_by = user.id;
-      }
-      const { error } = await supabase.from('site_config').upsert(payload);
-      if (error) {
-        console.error("Site sync error:", error);
+      try {
+        const idToUse = siteConfigDbId || '00000000-0000-0000-0000-000000000001';
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user || null;
+        const payload: any = { id: idToUse, config_data: config };
+        if (user) {
+          payload.created_by = user.id;
+        }
+        const { error } = await supabase.from('site_config').upsert(payload);
+        if (error) {
+          console.error("Site sync error:", error);
+          setSiteConfig(oldConfig);
+          throw new Error(error.message || "Failed to sync site configuration with database.");
+        }
+      } catch (err: any) {
+        console.error("Site sync exception:", err);
         setSiteConfig(oldConfig);
-        throw new Error(error.message || "Failed to sync site configuration with database.");
+        throw new Error(err.message || "Network error: Failed to connect to the database.");
       }
     }
   };
@@ -266,37 +273,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
 
       if (changedOrNew.length > 0) {
-        const { data: { user } } = await supabase.auth.getUser();
-        const dbDocs = changedOrNew.map(d => {
-          const payload: any = {
-            id: d.id,
-            name: d.name,
-            specialty: d.specialty,
-            qualifications: d.qualifications,
-            experience: d.experience,
-            department_id: d.departmentId || null,
-            availability_type: d.availabilityType,
-            available_days: d.availableDays,
-            visiting_date: d.visitingDate,
-            location: d.location,
-            photo: d.photo,
-            is_available: d.isAvailable,
-            expiry_date: d.expiryDate,
-            fee: d.fee,
-            consultation_time: d.consultationTime
-          };
-          if (user) {
-            payload.created_by = user.id;
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const user = session?.user || null;
+          const dbDocs = changedOrNew.map(d => {
+            const payload: any = {
+              id: d.id,
+              name: d.name,
+              specialty: d.specialty,
+              qualifications: d.qualifications,
+              experience: d.experience,
+              department_id: d.departmentId || null,
+              availability_type: d.availabilityType,
+              available_days: d.availableDays,
+              visiting_date: d.visitingDate,
+              location: d.location,
+              photo: d.photo,
+              is_available: d.isAvailable,
+              expiry_date: d.expiryDate,
+              fee: d.fee,
+              consultation_time: d.consultationTime
+            };
+            if (user) {
+              payload.created_by = user.id;
+            }
+            return payload;
+          });
+          const { error } = await supabase.from('opd_doctors').upsert(dbDocs);
+          if (error) {
+            console.error("Doctors sync error:", error);
+            setOpdDoctors(oldDoctors);
+            throw new Error(error.message || "Failed to sync doctors roster with database.");
           }
-          return payload;
-        });
-        const { error } = await supabase.from('opd_doctors').upsert(dbDocs);
-        if (error) {
-          console.error("Doctors sync error:", error);
+          syncedDoctorsRef.current = doctors;
+        } catch (err: any) {
+          console.error("Doctors sync exception:", err);
           setOpdDoctors(oldDoctors);
-          throw new Error(error.message || "Failed to sync doctors roster with database.");
+          throw new Error(err.message || "Network error: Failed to sync doctors with the database.");
         }
-        syncedDoctorsRef.current = doctors;
       }
     }
   };
@@ -313,30 +327,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
 
       if (changedOrNew.length > 0) {
-        const { data: { user } } = await supabase.auth.getUser();
-        const dbPkgs = changedOrNew.map(p => {
-          const payload: any = {
-            id: p.id,
-            name: p.name,
-            actual_price: p.actualPrice,
-            offer_price: p.offerPrice,
-            total_tests: p.totalTests,
-            tests: p.tests,
-            discount_badge: p.discountBadge,
-            description: p.description
-          };
-          if (user) {
-            payload.created_by = user.id;
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const user = session?.user || null;
+          const dbPkgs = changedOrNew.map(p => {
+            const payload: any = {
+              id: p.id,
+              name: p.name,
+              actual_price: p.actualPrice,
+              offer_price: p.offerPrice,
+              total_tests: p.totalTests,
+              tests: p.tests,
+              discount_badge: p.discountBadge,
+              description: p.description
+            };
+            if (user) {
+              payload.created_by = user.id;
+            }
+            return payload;
+          });
+          const { error } = await supabase.from('health_packages').upsert(dbPkgs);
+          if (error) {
+            console.error("Packages sync error:", error);
+            setHealthPackages(oldPkgs);
+            throw new Error(error.message || "Failed to sync health packages with database.");
           }
-          return payload;
-        });
-        const { error } = await supabase.from('health_packages').upsert(dbPkgs);
-        if (error) {
-          console.error("Packages sync error:", error);
+          syncedPackagesRef.current = pkgs;
+        } catch (err: any) {
+          console.error("Packages sync exception:", err);
           setHealthPackages(oldPkgs);
-          throw new Error(error.message || "Failed to sync health packages with database.");
+          throw new Error(err.message || "Network error: Failed to sync health checkup packages with the database.");
         }
-        syncedPackagesRef.current = pkgs;
       }
     }
   };
@@ -353,27 +374,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
 
       if (changedOrNew.length > 0) {
-        const { data: { user } } = await supabase.auth.getUser();
-        const payload = changedOrNew.map(t => {
-          const item: any = {
-            id: t.id,
-            name: t.name,
-            rating: t.rating,
-            review: t.review,
-            photo: t.photo
-          };
-          if (user) {
-            item.created_by = user.id;
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const user = session?.user || null;
+          const payload = changedOrNew.map(t => {
+            const item: any = {
+              id: t.id,
+              name: t.name,
+              rating: t.rating,
+              review: t.review,
+              photo: t.photo
+            };
+            if (user) {
+              item.created_by = user.id;
+            }
+            return item;
+          });
+          const { error } = await supabase.from('testimonials').upsert(payload);
+          if (error) {
+            console.error("Testimonials sync error:", error);
+            setTestimonials(oldTests);
+            throw new Error(error.message || "Failed to sync testimonials with database.");
           }
-          return item;
-        });
-        const { error } = await supabase.from('testimonials').upsert(payload);
-        if (error) {
-          console.error("Testimonials sync error:", error);
+          syncedTestimonialsRef.current = tests;
+        } catch (err: any) {
+          console.error("Testimonials sync exception:", err);
           setTestimonials(oldTests);
-          throw new Error(error.message || "Failed to sync testimonials with database.");
+          throw new Error(err.message || "Network error: Failed to sync testimonials with the database.");
         }
-        syncedTestimonialsRef.current = tests;
       }
     }
   };
@@ -390,26 +418,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
 
       if (changedOrNew.length > 0) {
-        const { data: { user } } = await supabase.auth.getUser();
-        const dbDepts = changedOrNew.map(d => {
-          const payload: any = {
-            id: d.id,
-            name: d.name,
-            head_of_department: d.headOfDepartment,
-            description: d.description
-          };
-          if (user) {
-            payload.created_by = user.id;
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const user = session?.user || null;
+          const dbDepts = changedOrNew.map(d => {
+            const payload: any = {
+              id: d.id,
+              name: d.name,
+              head_of_department: d.headOfDepartment,
+              description: d.description
+            };
+            if (user) {
+              payload.created_by = user.id;
+            }
+            return payload;
+          });
+          const { error } = await supabase.from('departments').upsert(dbDepts);
+          if (error) {
+            console.error("Departments sync error:", error);
+            setDepartments(oldDepts);
+            throw new Error(error.message || "Failed to sync departments with database.");
           }
-          return payload;
-        });
-        const { error } = await supabase.from('departments').upsert(dbDepts);
-        if (error) {
-          console.error("Departments sync error:", error);
+          syncedDepartmentsRef.current = depts;
+        } catch (err: any) {
+          console.error("Departments sync exception:", err);
           setDepartments(oldDepts);
-          throw new Error(error.message || "Failed to sync departments with database.");
+          throw new Error(err.message || "Network error: Failed to sync departments with the database.");
         }
-        syncedDepartmentsRef.current = depts;
       }
     }
   };
@@ -426,26 +461,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
 
       if (changedOrNew.length > 0) {
-        const { data: { user } } = await supabase.auth.getUser();
-        const dbFiles = changedOrNew.map(d => {
-          const payload: any = {
-            id: d.id,
-            name: d.name,
-            file_url: d.fileData,
-            upload_date: d.uploadDate
-          };
-          if (user) {
-            payload.created_by = user.id;
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const user = session?.user || null;
+          const dbFiles = changedOrNew.map(d => {
+            const payload: any = {
+              id: d.id,
+              name: d.name,
+              file_url: d.fileData,
+              upload_date: d.uploadDate
+            };
+            if (user) {
+              payload.created_by = user.id;
+            }
+            return payload;
+          });
+          const { error } = await supabase.from('clinic_documents').upsert(dbFiles);
+          if (error) {
+            console.error("Documents sync error:", error);
+            setDocuments(oldDocs);
+            throw new Error(error.message || "Failed to sync clinical documents with database.");
           }
-          return payload;
-        });
-        const { error } = await supabase.from('clinic_documents').upsert(dbFiles);
-        if (error) {
-          console.error("Documents sync error:", error);
+          syncedDocumentsRef.current = docs;
+        } catch (err: any) {
+          console.error("Documents sync exception:", err);
           setDocuments(oldDocs);
-          throw new Error(error.message || "Failed to sync clinical documents with database.");
+          throw new Error(err.message || "Network error: Failed to sync clinical documents with the database.");
         }
-        syncedDocumentsRef.current = docs;
       }
     }
   };
@@ -464,33 +506,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
 
       if (changedOrNew.length > 0) {
-        const { data: { user } } = await supabase.auth.getUser();
-        const dbApps = changedOrNew.map(a => {
-          const payload: any = {
-            id: a.id,
-            patient_name: a.patientName,
-            patient_phone: a.patientPhone,
-            patient_whatsapp: a.patientWhatsapp,
-            patient_address: a.patientAddress,
-            doctor_id: a.doctorId || null,
-            date: a.date,
-            time: a.time,
-            status: a.status,
-            type: a.type,
-            is_home_collection: a.isHomeCollection,
-            claim_offer: a.claimOffer,
-            final_price: a.finalPrice
-          };
-          if (user) {
-            payload.created_by = user.id;
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const user = session?.user || null;
+          const dbApps = changedOrNew.map(a => {
+            const payload: any = {
+              id: a.id,
+              patient_name: a.patientName,
+              patient_phone: a.patientPhone,
+              patient_whatsapp: a.patientWhatsapp,
+              patient_address: a.patientAddress,
+              doctor_id: a.doctorId || null,
+              date: a.date,
+              time: a.time,
+              status: a.status,
+              type: a.type,
+              is_home_collection: a.isHomeCollection,
+              claim_offer: a.claimOffer,
+              final_price: a.finalPrice
+            };
+            if (user) {
+              payload.created_by = user.id;
+            }
+            return payload;
+          });
+          const { error } = await supabase.from('appointments').upsert(dbApps);
+          if (error) {
+            console.error("Appointments sync error:", error);
+            setAppointments(oldApps);
+            throw new Error(error.message || "Failed to save appointment to database.");
           }
-          return payload;
-        });
-        const { error } = await supabase.from('appointments').upsert(dbApps);
-        if (error) {
-          console.error("Appointments sync error:", error);
+        } catch (err: any) {
+          console.error("Appointments sync exception:", err);
           setAppointments(oldApps);
-          throw new Error(error.message || "Failed to save appointment to database.");
+          throw new Error(err.message || "Network error: Failed to save appointment to the database.");
         }
       }
     }

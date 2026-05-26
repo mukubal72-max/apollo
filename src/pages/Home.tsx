@@ -5,6 +5,7 @@ import { useAppContext } from '../context/AppContext';
 import { useState, useMemo, useEffect } from 'react';
 
 import GoogleMap from '../components/GoogleMap';
+import heroBannerImage from '../assets/images/basti_hero_banner_1779695031243.png';
 
 export default function Home() {
   const { services, siteConfig, opdDoctors, setIsOpdPopupOpen, testimonials, isInitialLoadDone } = useAppContext();
@@ -170,62 +171,48 @@ export default function Home() {
         )}
       </AnimatePresence>
       {/* Hero Section */}
-      <section className="relative min-h-[500px] md:h-[700px] flex items-center overflow-hidden mx-4 md:mx-8 mt-4 md:mt-8 rounded-[2rem] md:rounded-[3.5rem] shadow-2xl group">
-        <div className="absolute inset-0 z-0">
+      <section className="relative overflow-hidden mx-4 md:mx-8 mt-4 md:mt-8 rounded-[2rem] md:rounded-[3.5rem] shadow-2xl group bg-slate-900 border border-slate-100">
+        <div className="w-full aspect-[4/3] sm:aspect-[21/9] relative z-0">
           <img 
-            src="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=2000" 
-            className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-            alt="Apollo Clinical Excellence"
+            src={siteConfig.heroBanner || heroBannerImage} 
+            className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+            alt="Apollo Clinical Excellence Basti"
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/60 to-transparent z-10" />
         </div>
-        <div className="container mx-auto px-6 md:px-12 relative z-20 py-24 md:py-32">
-          <div className="max-w-4xl">
-            <motion.div 
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="max-w-3xl text-white"
-            >
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-secondary/20 backdrop-blur-md border border-white/10 rounded-full mb-8">
-                <div className="w-2 h-2 bg-secondary rounded-full animate-pulse" />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Medical Center Of Excellence</span>
-              </div>
-              <h1 className="text-4xl sm:text-5xl md:text-7xl font-black mb-6 leading-[1] tracking-tighter uppercase italic font-display">
-                Advanced <br/>Health care<br/><span className="text-secondary not-italic uppercase">In Basti City.</span>
-              </h1>
-              <p className="text-base md:text-xl text-slate-300 max-w-xl mb-10 leading-relaxed font-bold uppercase tracking-tight">
-                World-class specialists visiting regularly from Lucknow & Delhi to provide premium medical care at your doorstep.
-              </p>
-              <div className="flex flex-wrap gap-4 md:gap-6 mb-12">
-                <button 
-                  onClick={() => setIsOpdPopupOpen(true)}
-                  className="w-full sm:w-auto px-10 py-5 bg-secondary text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-secondary/30 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-                >
-                  Book Appointment
-                </button>
-              </div>
-
-              {/* Specific Highlights */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
-                {[
-                  { label: 'Home Collection Centre', icon: FlaskConical },
-                  { label: 'Day Care Support', icon: Activity },
-                  { label: 'Health@home', icon: HomeIcon },
-                  { label: 'Matanhelia Family', icon: HeartPulse }
-                ].map((item, i) => (
-                  <div key={i} className="flex flex-col items-center gap-2 group cursor-pointer">
-                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center text-secondary group-hover:bg-secondary group-hover:text-white transition-all transform group-hover:-translate-y-1">
-                      <item.icon size={24} className="md:size-30" />
-                    </div>
-                    <span className="text-[10px] md:text-xs font-black uppercase text-white/80 tracking-widest text-center">{item.label}</span>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
+        
+        {/* Floating Book Appointment button positioned over the banner */}
+        <div className="absolute bottom-4 right-4 sm:bottom-8 sm:right-8 md:bottom-12 md:right-12 z-20">
+          <button 
+            onClick={() => setIsOpdPopupOpen(true)}
+            className="px-6 py-3 sm:px-10 sm:py-5 bg-secondary text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-secondary/30 hover:scale-105 active:scale-95 transition-all cursor-pointer text-xs sm:text-sm"
+          >
+            Book Appointment
+          </button>
         </div>
       </section>
+
+      {/* Specific Highlights Bar */}
+      <div className="container mx-auto px-8 mt-8 mb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 bg-slate-50 border border-slate-100 p-8 rounded-[2.5rem] shadow-sm">
+          {[
+            { label: 'Home Collection Centre', icon: FlaskConical, desc: 'Convenient lab testings at home' },
+            { label: 'Day Care Support', icon: Activity, desc: 'Advanced day care facilities' },
+            { label: 'Health @ Home', icon: HomeIcon, desc: 'Personalized clinical support' },
+            { label: 'Matanhelia Family', icon: HeartPulse, desc: 'Trusted family care legacy' }
+          ].map((item, i) => (
+            <div key={i} className="flex items-center gap-4 group p-3 hover:bg-white rounded-2xl transition-all duration-300 border border-transparent hover:border-slate-150 hover:shadow-sm">
+              <div className="w-12 h-12 rounded-xl bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                <item.icon size={22} />
+              </div>
+              <div>
+                <h4 className="text-xs font-black uppercase text-slate-800 tracking-tight">{item.label}</h4>
+                <p className="text-[10px] text-slate-400 font-medium leading-tight mt-0.5">{item.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Clinical Posters / Banners Section */}
       {siteConfig.posters && siteConfig.posters.length > 0 && (

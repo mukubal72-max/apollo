@@ -4,6 +4,7 @@ import { Plus, Trash2, Edit, Settings, Users, Activity, Lock, Upload, Image as I
 import { motion, AnimatePresence } from 'motion/react';
 import { OPDDoctor, Appointment, Testimonial, Department, HealthPackage, ClinicDocument } from '../types';
 import { supabase, generateUUID } from '../lib/supabase';
+import heroBannerImage from '../assets/images/basti_hero_banner_1779695031243.png';
 
 export default function Admin() {
   const { 
@@ -34,6 +35,7 @@ export default function Admin() {
 
   const logoInputRef = useRef<HTMLInputElement>(null);
   const posterInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   const [savingStatus, setSavingStatus] = useState<{[key: string]: boolean}>({});
 
@@ -223,8 +225,8 @@ export default function Admin() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (base64: string) => void) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 800000) { // 800KB limit for posters
-        alert('File is too large! Please upload an image smaller than 800KB.');
+      if (file.size > 5000000) { // 5MB limit for posters/banners
+        alert('File is too large! Please upload an image smaller than 5MB.');
         return;
       }
       const reader = new FileReader();
@@ -265,7 +267,7 @@ export default function Admin() {
       fee: 600,
       consultationTime: '10:00 AM - 02:00 PM'
     };
-    setOpdDoctors([newDoc, ...opdDoctors]);
+    setOpdDoctors([newDoc, ...opdDoctors], false);
   };
 
   const updateDoctor = (id: string, updates: Partial<OPDDoctor>) => {
@@ -342,7 +344,7 @@ export default function Admin() {
       rating: 5,
       review: 'Write your review here...',
     };
-    setTestimonials([newTest, ...testimonials]);
+    setTestimonials([newTest, ...testimonials], false);
   };
 
   const updateTestimonial = (id: string, updates: Partial<Testimonial>) => {
@@ -363,7 +365,7 @@ export default function Admin() {
       headOfDepartment: 'HOD Name',
       description: 'Department description...'
     };
-    setDepartments([newDept, ...departments]);
+    setDepartments([newDept, ...departments], false);
   };
 
   const updateDepartment = (id: string, updates: Partial<Department>) => {
@@ -386,7 +388,7 @@ export default function Admin() {
       totalTests: 0,
       tests: [],
     };
-    setHealthPackages([newPkg, ...healthPackages]);
+    setHealthPackages([newPkg, ...healthPackages], false);
   };
 
   const updateHealthPackage = (id: string, updates: Partial<HealthPackage>) => {
@@ -669,37 +671,88 @@ export default function Admin() {
                   </div>
                 
                 <div className="grid gap-10">
-                  {/* Logo Section */}
-                  <div className="bg-slate-50 p-8 rounded-3xl border border-slate-200">
-                    <h3 className="text-sm font-black uppercase text-slate-400 tracking-widest mb-6">Clinic Logo</h3>
-                    <div className="flex flex-col md:flex-row items-center gap-8">
-                      <div className="w-32 h-32 bg-white rounded-2xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden">
-                        {(siteConfig.logo || "https://www.apolloclinic.com/assets/images/logo.png") ? (
-                          <img 
-                            src={siteConfig.logo || "https://www.apolloclinic.com/assets/images/logo.png"} 
-                            alt="Clinic Logo" 
-                            className={`w-full h-full object-contain p-2 ${!siteConfig.logo ? 'opacity-30 grayscale' : ''}`} 
-                          />
-                        ) : (
-                          <ImageIcon className="text-slate-200" size={48} />
-                        )}
+                  <div className="grid md:grid-cols-2 gap-8">
+                    {/* Logo Section */}
+                    <div className="bg-slate-50 p-8 rounded-3xl border border-slate-200 flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-sm font-black uppercase text-slate-400 tracking-widest mb-6">Clinic Logo</h3>
+                        <div className="flex flex-col sm:flex-row items-center gap-8">
+                          <div className="w-32 h-32 bg-white rounded-2xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden">
+                            {(siteConfig.logo || "https://www.apolloclinic.com/assets/images/logo.png") ? (
+                              <img 
+                                src={siteConfig.logo || "https://www.apolloclinic.com/assets/images/logo.png"} 
+                                alt="Clinic Logo" 
+                                className={`w-full h-full object-contain p-2 ${!siteConfig.logo ? 'opacity-30 grayscale' : ''}`} 
+                              />
+                            ) : (
+                              <ImageIcon className="text-slate-200" size={48} />
+                            )}
+                          </div>
+                          <div className="space-y-4">
+                            {!siteConfig.logo && <p className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">Showing Default Apollo Logo</p>}
+                            <input 
+                              type="file" 
+                              hidden 
+                              ref={logoInputRef}
+                              accept="image/*"
+                              onChange={(e) => handleImageUpload(e, (b64) => setSiteConfig({...siteConfig, logo: b64}))}
+                            />
+                            <button 
+                              onClick={() => logoInputRef.current?.click()}
+                              className="px-6 py-3 bg-white border border-slate-200 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-100 transition-all shadow-sm text-xs uppercase"
+                            >
+                              <Upload size={18} /> Upload New Logo
+                            </button>
+                            <p className="text-[10px] text-slate-400">Recommended: Transparent PNG, under 200KB.</p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="space-y-4">
-                        {!siteConfig.logo && <p className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">Showing Default Apollo Logo</p>}
-                        <input 
-                          type="file" 
-                          hidden 
-                          ref={logoInputRef}
-                          accept="image/*"
-                          onChange={(e) => handleImageUpload(e, (b64) => setSiteConfig({...siteConfig, logo: b64}))}
-                        />
-                        <button 
-                          onClick={() => logoInputRef.current?.click()}
-                          className="px-6 py-3 bg-white border border-slate-200 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-100 transition-all shadow-sm"
-                        >
-                          <Upload size={18} /> Upload New Logo
-                        </button>
-                        <p className="text-xs text-slate-400">Recommended: Transparent PNG, under 200KB.</p>
+                    </div>
+
+                    {/* Homepage Hero Banner Section */}
+                    <div className="bg-slate-50 p-8 rounded-3xl border border-slate-200 flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-sm font-black uppercase text-slate-400 tracking-widest mb-6 font-display">Homepage Hero Banner</h3>
+                        <div className="flex flex-col sm:flex-row items-center gap-8">
+                          <div className="w-48 h-32 bg-white rounded-2xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden relative shadow-inner">
+                            <img 
+                              src={siteConfig.heroBanner || heroBannerImage} 
+                              alt="Homepage Hero Banner" 
+                              className="w-full h-full object-cover p-1 rounded-2xl" 
+                            />
+                          </div>
+                          <div className="space-y-4 flex-grow">
+                            {!siteConfig.heroBanner ? (
+                              <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest">Showing Pre-generated Basti Banner</p>
+                            ) : (
+                              <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Showing Your Custom Banner</p>
+                            )}
+                            <input 
+                              type="file" 
+                              hidden 
+                              ref={bannerInputRef}
+                              accept="image/*"
+                              onChange={(e) => handleImageUpload(e, (b64) => setSiteConfig({...siteConfig, heroBanner: b64}))}
+                            />
+                            <div className="flex flex-wrap gap-2">
+                              <button 
+                                onClick={() => bannerInputRef.current?.click()}
+                                className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl font-bold flex items-center gap-1.5 hover:bg-slate-100 transition-all shadow-sm text-[10px] uppercase text-slate-700"
+                              >
+                                <Upload size={14} /> Upload Banner
+                              </button>
+                              {siteConfig.heroBanner && (
+                                <button 
+                                  onClick={() => setSiteConfig({...siteConfig, heroBanner: undefined})}
+                                  className="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 rounded-xl font-bold flex items-center gap-1.5 transition-all shadow-sm text-[10px] uppercase"
+                                >
+                                  <Trash2 size={13} /> Reset
+                                </button>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-slate-400">File must be under 800KB. Ideal aspect ratio: 21:9.</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1454,14 +1507,24 @@ export default function Admin() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {(siteConfig.posters || []).map((poster, idx) => (
-                      <div key={idx} className="group relative rounded-[2rem] overflow-hidden border border-slate-200 shadow-md">
+                      <div key={idx} className="group relative rounded-[2rem] overflow-hidden border border-slate-200 shadow-md bg-white">
                         <img src={poster} alt={`Poster ${idx + 1}`} className="w-full h-auto aspect-[3/4] object-cover" />
-                        <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                        <div className="absolute inset-0 bg-slate-900/70 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-center items-center p-6 gap-3">
+                          <button 
+                            onClick={() => {
+                              setSiteConfig({...siteConfig, heroBanner: poster});
+                              alert("Successfully set this image as the Homepage Hero Banner! It is now live on the Home page.");
+                            }}
+                            className="w-full py-3 bg-secondary text-white rounded-xl font-bold hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-1.5 text-[10px] uppercase shadow-lg border border-secondary"
+                          >
+                            <Upload size={14} /> Use as Home Banner
+                          </button>
+                          
                           <button 
                             onClick={() => deletePoster(idx)}
-                            className="bg-white text-red-500 p-4 rounded-2xl shadow-xl hover:scale-110 active:scale-95 transition-all"
+                            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold active:scale-95 transition-all text-[10px] uppercase flex items-center justify-center gap-1 shadow-md"
                           >
-                            <Trash2 size={24} />
+                            <Trash2 size={13} /> Delete Poster
                           </button>
                         </div>
                       </div>
