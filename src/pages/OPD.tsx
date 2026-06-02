@@ -29,7 +29,6 @@ export default function OPDPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 border-b border-slate-200 pb-6 gap-4">
         <div>
           <h2 className="text-xl md:text-2xl font-black text-slate-900 uppercase tracking-tight mb-1">Today's OPD Schedule</h2>
-          <p className="text-[10px] md:text-xs text-secondary font-black uppercase tracking-widest">Unit of Apollo Gorakhpur Group • Live from Admin Panel</p>
         </div>
         <div className="flex items-center gap-3">
           <button 

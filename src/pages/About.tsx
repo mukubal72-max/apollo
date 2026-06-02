@@ -64,10 +64,10 @@ export default function About() {
             <span className="text-secondary font-black uppercase tracking-[0.3em] text-[10px] mb-2 block">
               Redefining Healthcare
             </span>
-            <h1 className="text-4xl md:text-7xl font-black text-primary uppercase tracking-tighter mb-6 leading-[0.9] font-display">
+            <h1 className="text-4xl md:text-7xl font-black text-primary uppercase tracking-normal mb-6 leading-[0.9] font-display">
               <span className="text-secondary">Apollo</span> Clinic <br /> Basti
             </h1>
-            <p className="text-xl md:text-2xl font-bold text-slate-800 uppercase tracking-tight max-w-3xl mx-auto border-t-4 border-secondary pt-4 inline-block">
+            <p className="text-xl md:text-2xl font-bold text-slate-800 uppercase tracking-normal max-w-3xl mx-auto border-t-4 border-secondary pt-4 inline-block">
               Trusted Care. Advanced Healthcare. Everyday Commitment.
             </p>
           </motion.div>
@@ -104,7 +104,7 @@ export default function About() {
       <section className="py-24 bg-primary px-6 relative">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter mb-4 font-display">What We Offer</h2>
+            <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-normal mb-4 font-display">What We Offer</h2>
             <div className="h-1.5 w-24 bg-secondary mx-auto"></div>
           </div>
           
@@ -221,14 +221,10 @@ export default function About() {
                <p className="text-primary font-black uppercase text-xl md:text-2xl tracking-tighter">
                  Apollo Clinic Basti
                </p>
-               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em] mt-1 mb-4">
+               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em] mt-1 mb-3">
                  Managed by C Square Medco LLP
                </p>
-               <div className="flex gap-4 justify-center">
-                 <span className="w-2 h-2 rounded-full bg-secondary"></span>
-                 <span className="w-2 h-2 rounded-full bg-primary/30"></span>
-                 <span className="w-2 h-2 rounded-full bg-primary/30"></span>
-               </div>
+               <div className="w-16 h-1 bg-secondary mx-auto rounded-full"></div>
             </div>
           </div>
         </div>

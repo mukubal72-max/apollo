@@ -84,7 +84,8 @@ export default function OPDPopup() {
     // Send to clinic number instead of patient self-share
     const firstPhone = siteConfig.contact?.split(',')[0] || '8004055501';
     const clinicNumber = firstPhone.replace(/[^0-9]/g, '') || '8004055501';
-    const whatsappUrl = `https://wa.me/91${clinicNumber}?text=${message}`;
+    const whatsappNum = clinicNumber.length === 10 ? `91${clinicNumber}` : clinicNumber;
+    const whatsappUrl = `https://wa.me/${whatsappNum}?text=${message}`;
     window.open(whatsappUrl, '_blank');
   };
 
@@ -187,7 +188,8 @@ export default function OPDPopup() {
     const message = encodeURIComponent(rawMessage);
     const firstPhone = siteConfig.contact?.split(',')[0] || '8004055501';
     const clinicNumber = firstPhone.replace(/[^0-9]/g, '') || '8004055501';
-    window.open(`https://wa.me/91${clinicNumber}?text=${message}`, '_blank');
+    const whatsappNum = clinicNumber.length === 10 ? `91${clinicNumber}` : clinicNumber;
+    window.open(`https://wa.me/${whatsappNum}?text=${message}`, '_blank');
   };
 
   const closePopup = () => {
