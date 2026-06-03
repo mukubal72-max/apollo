@@ -263,28 +263,50 @@ export default function OPDPopup() {
                     className="p-6"
                   >
                     <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-x-auto scrollbar-thin">
-                      <div className="min-w-[600px]">
+                      <div className="min-w-[750px]">
                         <table className="w-full text-left border-collapse">
                         <thead className="hidden md:table-header-group">
                           <tr className="bg-slate-50 border-b border-slate-100">
+                            <th className="p-5 font-black uppercase tracking-widest text-[10px] text-slate-500">Status</th>
                             <th className="p-5 font-black uppercase tracking-widest text-[10px] text-slate-500">Specialty</th>
                             <th className="p-5 font-black uppercase tracking-widest text-[10px] text-slate-500">Consultant</th>
-                            <th className="p-5 font-black uppercase tracking-widest text-[10px] text-slate-500 text-center">Visiting Date</th>
+                            <th className="p-5 font-black uppercase tracking-widest text-[10px] text-slate-500">Visiting Date</th>
                             <th className="p-5 font-black uppercase tracking-widest text-[10px] text-slate-500 text-center">Book Appointment</th>
                           </tr>
                         </thead>
                         <tbody>
                           {opdDoctors.map((doctor, i) => {
                             const expired = isDoctorExpired(doctor);
+                            const displayDate = () => {
+                              if (!doctor.visitingDate) return '';
+                              if (doctor.availabilityType === 'regular') {
+                                return `Regular: ${doctor.availableDays?.map(d => d.substring(0,3)).join(', ')}`;
+                              }
+                              try {
+                                const date = new Date(doctor.visitingDate);
+                                return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+                              } catch {
+                                return doctor.visitingDate;
+                              }
+                            };
                             return (
                               <tr 
                                 key={doctor.id} 
-                                className={`group border-b border-slate-50 last:border-0 hover:bg-slate-50/80 transition-colors ${(!doctor.isAvailable || expired) ? 'opacity-50' : ''}`}
+                                className={`group border-b border-slate-50 last:border-0 hover:bg-slate-50/80 transition-colors ${(!doctor.isAvailable || expired) ? 'opacity-50 grayscale' : ''}`}
                               >
                                 <td className="p-5 align-middle">
+                                  <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${(doctor.isAvailable && !expired) ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-400'}`}>
+                                    {(doctor.isAvailable && !expired) ? 'Available' : expired ? 'Expired' : 'Offline'}
+                                  </span>
+                                </td>
+                                <td className="p-5 align-middle">
                                   <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center text-secondary group-hover:bg-primary group-hover:text-white transition-all transform group-hover:rotate-6">
-                                      <Stethoscope size={24} />
+                                    <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center text-secondary group-hover:bg-primary group-hover:text-white transition-all transform group-hover:rotate-6 shrink-0 overflow-hidden">
+                                      {doctor.photo ? (
+                                        <img src={doctor.photo} alt="" className="w-full h-full object-cover rounded-2xl" />
+                                      ) : (
+                                        <Stethoscope size={24} />
+                                      )}
                                     </div>
                                     <span className="font-black text-xs md:text-sm text-primary uppercase tracking-tight">{doctor.specialty}</span>
                                   </div>
@@ -293,25 +315,32 @@ export default function OPDPopup() {
                                   <div>
                                     <h4 className="font-black text-sm text-slate-800 uppercase leading-none mb-1">{doctor.name}</h4>
                                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{doctor.qualifications}</p>
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                      <span className="text-[9px] font-black uppercase text-secondary bg-secondary/15 px-2.5 py-1 rounded bg-opacity-70">₹{doctor.fee || 600} Fee</span>
+                                      <span className="text-[9px] font-black uppercase text-slate-500 bg-slate-100 px-2.5 py-1 rounded">{doctor.consultationTime || '10:00 AM - 02:00 PM'}</span>
+                                    </div>
                                   </div>
                                 </td>
-                                <td className="p-5 align-middle text-center">
-                                  <motion.span 
-                                    animate={(!expired) ? {
-                                      opacity: [1, 0.4, 1],
-                                      scale: [1, 1.05, 1],
-                                      backgroundColor: ['rgba(241, 245, 249, 1)', 'rgba(243, 146, 35, 0.2)', 'rgba(241, 245, 249, 1)'],
-                                      color: ['#334155', '#f39223', '#334155']
-                                    } : {}}
-                                    transition={{
-                                      duration: 1.5,
-                                      repeat: Infinity,
-                                      ease: "easeInOut"
-                                    }}
-                                    className={`text-xs font-black uppercase tracking-tight px-3 py-1 rounded-full ${expired ? 'bg-red-50 text-red-400 line-through blur-[1.5px]' : 'bg-slate-100 text-slate-700'}`}
-                                  >
-                                    {doctor.visitingDate}
-                                  </motion.span>
+                                <td className="p-5 align-middle">
+                                  <div className="flex flex-col">
+                                    <motion.span 
+                                      animate={(!expired && doctor.isAvailable) ? {
+                                        opacity: [1, 0.4, 1],
+                                        scale: [1, 1.05, 1],
+                                        backgroundColor: ['rgba(241, 245, 249, 1)', 'rgba(243, 146, 35, 0.2)', 'rgba(241, 245, 249, 1)'],
+                                        color: ['#334155', '#f39223', '#334155']
+                                      } : {}}
+                                      transition={{
+                                        duration: 1.5,
+                                        repeat: Infinity,
+                                        ease: "easeInOut"
+                                      }}
+                                      className={`text-xs font-black uppercase tracking-tight px-3 py-1 rounded-full self-start ${expired ? 'bg-red-50 text-red-400 line-through blur-[1.5px]' : 'bg-slate-100 text-slate-700'}`}
+                                    >
+                                      {displayDate()}
+                                    </motion.span>
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1 opacity-70 italic px-3">{doctor.location}</span>
+                                  </div>
                                 </td>
                                 <td className="p-5 align-middle text-center">
                                   <button 
