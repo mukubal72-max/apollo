@@ -9,6 +9,10 @@ DROP TABLE IF EXISTS public.health_packages CASCADE;
 DROP TABLE IF EXISTS public.appointments CASCADE;
 DROP TABLE IF EXISTS public.testimonials CASCADE;
 DROP TABLE IF EXISTS public.clinic_documents CASCADE;
+DROP TABLE IF EXISTS public.media CASCADE;
+DROP TABLE IF EXISTS public.message_logs CASCADE;
+DROP TABLE IF EXISTS public.staff_accounts CASCADE;
+DROP TABLE IF EXISTS public.templates CASCADE;
 
 -- =====================================================
 -- ENABLE UUID EXTENSION
@@ -132,6 +136,63 @@ CREATE TABLE public.clinic_documents (
 );
 
 -- =====================================================
+-- MEDIA (UPLOADS & POSTERS)
+-- =====================================================
+
+CREATE TABLE public.media (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  file_url TEXT NOT NULL,
+  file_type TEXT,
+  file_size INTEGER,
+  created_by UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- =====================================================
+-- MESSAGE LOGS (MESSAGES)
+-- =====================================================
+
+CREATE TABLE public.message_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  recipient TEXT NOT NULL,
+  message TEXT NOT NULL,
+  status TEXT DEFAULT 'sent',
+  template_type TEXT,
+  created_by UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- =====================================================
+-- STAFF ACCOUNTS
+-- =====================================================
+
+CREATE TABLE public.staff_accounts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  role TEXT DEFAULT 'staff',
+  phone TEXT,
+  is_active BOOLEAN DEFAULT true,
+  created_by UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- =====================================================
+-- TEMPLATES
+-- =====================================================
+
+CREATE TABLE public.templates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL UNIQUE,
+  content TEXT NOT NULL,
+  type TEXT DEFAULT 'whatsapp',
+  placeholder_keys TEXT[],
+  created_by UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- =====================================================
 -- ENABLE RLS
 -- =====================================================
 
@@ -142,6 +203,10 @@ ALTER TABLE public.health_packages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.testimonials ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.clinic_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.media ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.message_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.staff_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.templates ENABLE ROW LEVEL SECURITY;
 
 -- =====================================================
 -- DROP OLD POLICIES
@@ -435,6 +500,142 @@ TO anon, authenticated
 USING (id IS NOT NULL);
 
 -- =====================================================
+-- MEDIA POLICIES
+-- =====================================================
+
+DROP POLICY IF EXISTS "media_select" ON public.media;
+DROP POLICY IF EXISTS "media_insert" ON public.media;
+DROP POLICY IF EXISTS "media_update" ON public.media;
+DROP POLICY IF EXISTS "media_delete" ON public.media;
+
+CREATE POLICY "media_select"
+ON public.media
+FOR SELECT
+TO anon, authenticated
+USING (true);
+
+CREATE POLICY "media_insert"
+ON public.media
+FOR INSERT
+TO anon, authenticated
+WITH CHECK (name IS NOT NULL);
+
+CREATE POLICY "media_update"
+ON public.media
+FOR UPDATE
+TO anon, authenticated
+USING (id IS NOT NULL)
+WITH CHECK (name IS NOT NULL);
+
+CREATE POLICY "media_delete"
+ON public.media
+FOR DELETE
+TO anon, authenticated
+USING (id IS NOT NULL);
+
+-- =====================================================
+-- MESSAGE LOGS POLICIES
+-- =====================================================
+
+DROP POLICY IF EXISTS "message_logs_select" ON public.message_logs;
+DROP POLICY IF EXISTS "message_logs_insert" ON public.message_logs;
+DROP POLICY IF EXISTS "message_logs_update" ON public.message_logs;
+DROP POLICY IF EXISTS "message_logs_delete" ON public.message_logs;
+
+CREATE POLICY "message_logs_select"
+ON public.message_logs
+FOR SELECT
+TO anon, authenticated
+USING (true);
+
+CREATE POLICY "message_logs_insert"
+ON public.message_logs
+FOR INSERT
+TO anon, authenticated
+WITH CHECK (recipient IS NOT NULL AND message IS NOT NULL);
+
+CREATE POLICY "message_logs_update"
+ON public.message_logs
+FOR UPDATE
+TO anon, authenticated
+USING (id IS NOT NULL)
+WITH CHECK (id IS NOT NULL);
+
+CREATE POLICY "message_logs_delete"
+ON public.message_logs
+FOR DELETE
+TO anon, authenticated
+USING (id IS NOT NULL);
+
+-- =====================================================
+-- STAFF ACCOUNTS POLICIES
+-- =====================================================
+
+DROP POLICY IF EXISTS "staff_accounts_select" ON public.staff_accounts;
+DROP POLICY IF EXISTS "staff_accounts_insert" ON public.staff_accounts;
+DROP POLICY IF EXISTS "staff_accounts_update" ON public.staff_accounts;
+DROP POLICY IF EXISTS "staff_accounts_delete" ON public.staff_accounts;
+
+CREATE POLICY "staff_accounts_select"
+ON public.staff_accounts
+FOR SELECT
+TO anon, authenticated
+USING (true);
+
+CREATE POLICY "staff_accounts_insert"
+ON public.staff_accounts
+FOR INSERT
+TO anon, authenticated
+WITH CHECK (name IS NOT NULL AND email IS NOT NULL);
+
+CREATE POLICY "staff_accounts_update"
+ON public.staff_accounts
+FOR UPDATE
+TO anon, authenticated
+USING (id IS NOT NULL)
+WITH CHECK (name IS NOT NULL AND email IS NOT NULL);
+
+CREATE POLICY "staff_accounts_delete"
+ON public.staff_accounts
+FOR DELETE
+TO anon, authenticated
+USING (id IS NOT NULL);
+
+-- =====================================================
+-- TEMPLATES POLICIES
+-- =====================================================
+
+DROP POLICY IF EXISTS "templates_select" ON public.templates;
+DROP POLICY IF EXISTS "templates_insert" ON public.templates;
+DROP POLICY IF EXISTS "templates_update" ON public.templates;
+DROP POLICY IF EXISTS "templates_delete" ON public.templates;
+
+CREATE POLICY "templates_select"
+ON public.templates
+FOR SELECT
+TO anon, authenticated
+USING (true);
+
+CREATE POLICY "templates_insert"
+ON public.templates
+FOR INSERT
+TO anon, authenticated
+WITH CHECK (name IS NOT NULL AND content IS NOT NULL);
+
+CREATE POLICY "templates_update"
+ON public.templates
+FOR UPDATE
+TO anon, authenticated
+USING (id IS NOT NULL)
+WITH CHECK (name IS NOT NULL AND content IS NOT NULL);
+
+CREATE POLICY "templates_delete"
+ON public.templates
+FOR DELETE
+TO anon, authenticated
+USING (id IS NOT NULL);
+
+-- =====================================================
 -- REALTIME
 -- =====================================================
 
@@ -445,6 +646,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.health_packages;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.appointments;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.testimonials;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.clinic_documents;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.media;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.message_logs;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.staff_accounts;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.templates;
 
 -- =====================================================
 -- REPLICA IDENTITY
@@ -457,11 +662,9 @@ ALTER TABLE public.health_packages REPLICA IDENTITY FULL;
 ALTER TABLE public.appointments REPLICA IDENTITY FULL;
 ALTER TABLE public.testimonials REPLICA IDENTITY FULL;
 ALTER TABLE public.clinic_documents REPLICA IDENTITY FULL;
+ALTER TABLE public.media REPLICA IDENTITY FULL;
+ALTER TABLE public.message_logs REPLICA IDENTITY FULL;
+ALTER TABLE public.staff_accounts REPLICA IDENTITY FULL;
+ALTER TABLE public.templates REPLICA IDENTITY FULL;
 
--- Create SELECT policy for everyone
-CREATE POLICY "media_select" ON public.media 
-  FOR SELECT TO anon, authenticated USING (true);
-
--- Create INSERT/UPDATE/DELETE policies for authenticated users
-CREATE POLICY "media_mutate" ON public.media 
-  FOR ALL TO authenticated USING (auth.uid() IS NOT NULL);
+-- End of database setup. All tables fully configured.
