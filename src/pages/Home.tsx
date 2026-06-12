@@ -15,6 +15,11 @@ export default function Home() {
 
   // Dynamic header banners slider logic
   const banners = useMemo(() => {
+    // If the database has not finished loading, return an empty array to avoid flashing the default pre-image
+    if (!isInitialLoadDone) {
+      return [];
+    }
+
     const list: string[] = [];
     
     // 1. Post any uploaded posters/banners from database config if available
@@ -22,18 +27,19 @@ export default function Home() {
       list.push(...siteConfig.posters);
     }
     
-    // 2. Add heroBanner if explicitly configured, otherwise fall back to pre-generated Basti banner
+    // 2. Add heroBanner if explicitly configured
     if (siteConfig.heroBanner) {
       if (!list.includes(siteConfig.heroBanner)) {
         list.splice(0, 0, siteConfig.heroBanner);
       }
-    } else {
-      if (!list.includes(heroBannerImage)) {
-        list.push(heroBannerImage);
-      }
+    }
+    
+    // 3. Fallback to pre-generated Basti banner ONLY if we don't have any uploaded/configured posters or banners
+    if (list.length === 0) {
+      list.push(heroBannerImage);
     }
     return list;
-  }, [siteConfig.posters, siteConfig.heroBanner]);
+  }, [siteConfig.posters, siteConfig.heroBanner, isInitialLoadDone]);
 
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -213,28 +219,36 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative overflow-hidden mx-4 md:mx-8 mt-4 md:mt-8 rounded-[2rem] md:rounded-[3.5rem] shadow-2xl group bg-slate-50 border border-slate-150">
         <div className="w-full relative z-0 overflow-hidden">
-          {banners.length > 0 && (
+          {banners.length > 0 ? (
             <img 
               src={banners[0]} 
               className="w-full h-auto opacity-0 pointer-events-none block" 
               alt="Sizer" 
               referrerPolicy="no-referrer"
             />
+          ) : (
+            <div className="w-full aspect-[21/9] md:aspect-[3/1] bg-slate-50 lg:aspect-[2.39/1]" />
           )}
           
           <div className="absolute inset-0">
             <AnimatePresence mode="wait">
-              <motion.img 
-                key={currentSlide}
-                src={banners[currentSlide]} 
-                initial={{ opacity: 0, scale: 1.01 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.99 }}
-                transition={{ duration: 0.5, ease: "easeInOut" }}
-                className="w-full h-full object-cover"
-                alt={`Apollo Clinical Excellence Slide ${currentSlide + 1}`}
-                referrerPolicy="no-referrer"
-              />
+              {banners.length > 0 ? (
+                <motion.img 
+                  key={currentSlide}
+                  src={banners[currentSlide]} 
+                  initial={{ opacity: 0, scale: 1.01 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.99 }}
+                  transition={{ duration: 0.5, ease: "easeInOut" }}
+                  className="w-full h-full object-cover"
+                  alt={`Apollo Clinical Excellence Slide ${currentSlide + 1}`}
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-full h-full bg-slate-100 animate-pulse flex items-center justify-center">
+                  <div className="text-slate-300 font-bold uppercase tracking-widest text-xs">Loading banners...</div>
+                </div>
+              )}
             </AnimatePresence>
           </div>
 

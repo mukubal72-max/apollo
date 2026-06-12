@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { Plus, Trash2, Edit, Settings, Users, Activity, Lock, Upload, Image as ImageIcon, Calendar, Check, X, Phone, User, Clock, Shield, FlaskConical, FileText, MessageCircle, HelpCircle } from 'lucide-react';
+import { Plus, Trash2, Edit, Settings, Users, Activity, Lock, Upload, Image as ImageIcon, Calendar, Check, X, Phone, User, Clock, Shield, FlaskConical, FileText, MessageCircle, HelpCircle, Mail, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { OPDDoctor, Appointment, Testimonial, Department, HealthPackage, ClinicDocument } from '../types';
+import { OPDDoctor, Appointment, Testimonial, Department, HealthPackage, ClinicDocument, Media, MessageLog, StaffAccount, Template } from '../types';
 import { supabase, generateUUID } from '../lib/supabase';
 import heroBannerImage from '../assets/images/basti_hero_banner_1779695031243.png';
 
@@ -24,7 +24,7 @@ export default function Admin() {
     deleteDocument: removeDocument
   } = useAppContext();
   
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'site' | 'doctors' | 'services' | 'appointments' | 'testimonials' | 'marketing' | 'departments' | 'checkups' | 'documents'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'site' | 'doctors' | 'services' | 'appointments' | 'testimonials' | 'marketing' | 'departments' | 'checkups' | 'documents' | 'media' | 'messages' | 'staff' | 'templates'>('dashboard');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [loginMethod, setLoginMethod] = useState<'supabase' | 'legacy'>('supabase');
@@ -32,6 +32,320 @@ export default function Admin() {
   const [authError, setAuthError] = useState('');
   const [loading, setLoading] = useState(false);
   const [activeUser, setActiveUser] = useState<any>(null);
+
+  // NEW Custom Admin entity states
+  const [mediaList, setMediaList] = useState<Media[]>([]);
+  const [messageLogs, setMessageLogs] = useState<MessageLog[]>([]);
+  const [staffAccounts, setStaffAccounts] = useState<StaffAccount[]>([]);
+  const [templatesList, setTemplatesList] = useState<Template[]>([]);
+
+  // Form states for Sending Messages
+  const [msgRecipient, setMsgRecipient] = useState('');
+  const [msgSelectedTemplate, setMsgSelectedTemplate] = useState<string>('');
+  const [msgVariables, setMsgVariables] = useState<{[key: string]: string}>({});
+  const [msgBody, setMsgBody] = useState('');
+  const [msgType, setMsgType] = useState<'whatsapp' | 'sms' | 'email'>('whatsapp');
+
+  // Form states for Staff Accounts
+  const [staffName, setStaffName] = useState('');
+  const [staffEmail, setStaffEmail] = useState('');
+  const [staffRole, setStaffRole] = useState<'admin' | 'staff' | 'doctor'>('staff');
+  const [staffPhone, setStaffPhone] = useState('');
+  const [staffIsActive, setStaffIsActive] = useState(true);
+  const [editingStaffId, setEditingStaffId] = useState<string | null>(null);
+
+  // Form states for Message Templates
+  const [tplName, setTplName] = useState('');
+  const [tplContent, setTplContent] = useState('');
+  const [tplType, setTplType] = useState<'whatsapp' | 'sms' | 'email'>('whatsapp');
+  const [tplPlaceholders, setTplPlaceholders] = useState('');
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
+
+  // Fetch functions
+  const fetchMedia = async () => {
+    if (!supabase) return;
+    try {
+      const { data, error } = await supabase.from('media').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      setMediaList(data || []);
+    } catch (e) {
+      console.error("Error fetching media:", e);
+    }
+  };
+
+  const fetchMessages = async () => {
+    if (!supabase) return;
+    try {
+      const { data, error } = await supabase.from('message_logs').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      setMessageLogs(data || []);
+    } catch (e) {
+      console.error("Error fetching message logs:", e);
+    }
+  };
+
+  const fetchStaff = async () => {
+    if (!supabase) return;
+    try {
+      const { data, error } = await supabase.from('staff_accounts').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      setStaffAccounts(data || []);
+    } catch (e) {
+      console.error("Error fetching staff accounts:", e);
+    }
+  };
+
+  const fetchTemplates = async () => {
+    if (!supabase) return;
+    try {
+      const { data, error } = await supabase.from('templates').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      setTemplatesList(data || []);
+    } catch (e) {
+      console.error("Error fetching templates:", e);
+    }
+  };
+
+  // Auto loaders
+  useEffect(() => {
+    if (isAuthenticated && supabase) {
+      fetchMedia();
+      fetchMessages();
+      fetchStaff();
+      fetchTemplates();
+    }
+  }, [isAuthenticated]);
+
+  // Dynamic templates listener to set correct fields when choosing templates
+  useEffect(() => {
+    if (!msgSelectedTemplate) {
+      setMsgBody('');
+      setMsgVariables({});
+      return;
+    }
+    const tpl = templatesList.find(t => t.id === msgSelectedTemplate);
+    if (tpl) {
+      setMsgBody(tpl.content);
+      setMsgType(tpl.type);
+      const vars: {[key: string]: string} = {};
+      if (tpl.placeholder_keys && tpl.placeholder_keys.length > 0) {
+         tpl.placeholder_keys.forEach(k => {
+           vars[k] = '';
+         });
+      } else {
+         const matches = tpl.content.match(/\{\{([^}]+)\}\}/g);
+         if (matches) {
+           matches.forEach(m => {
+             const key = m.replace(/\{\{|\}\}/g, '').trim();
+             vars[key] = '';
+           });
+         }
+      }
+      setMsgVariables(vars);
+    }
+  }, [msgSelectedTemplate, templatesList]);
+
+  const getInterpolatedMessage = () => {
+    let text = msgBody;
+    Object.entries(msgVariables).forEach(([key, val]) => {
+      text = text.replace(new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g'), val || `[${key}]`);
+    });
+    return text;
+  };
+
+  const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64 = event.target?.result as string;
+      try {
+        const { error } = await supabase.from('media').insert({
+          name: file.name,
+          file_url: base64,
+          file_type: file.type,
+          file_size: file.size
+        });
+        if (error) throw error;
+        showToast("Media uploaded successfully!");
+        fetchMedia();
+      } catch (err: any) {
+        showToast("Upload failed: " + err.message, "error");
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const deleteMediaItem = async (id: string) => {
+    customConfirm('Are you sure you want to delete this media item?', async () => {
+      try {
+        const { error } = await supabase.from('media').delete().eq('id', id);
+        if (error) throw error;
+        showToast("Media item deleted!");
+        fetchMedia();
+      } catch (err: any) {
+        showToast("Deletion failed: " + err.message, "error");
+      }
+    });
+  };
+
+  const useMediaAsHero = async (fileUrl: string) => {
+    setSiteConfig({ ...siteConfig, heroBanner: fileUrl });
+    showToast("Homepage Hero Banner updated! Save config to persist.");
+  };
+
+  const useMediaAsPoster = async (fileUrl: string) => {
+    const currentPosters = siteConfig.posters || [];
+    if (currentPosters.includes(fileUrl)) {
+      showToast("Already in posters collection!", "info");
+      return;
+    }
+    setSiteConfig({ ...siteConfig, posters: [...currentPosters, fileUrl] });
+    showToast("Poster added to collection! Save config to persist.");
+  };
+
+  const handleSendMessage = async () => {
+    if (!msgRecipient) {
+      showToast("Please enter a recipient contact!", "error");
+      return;
+    }
+    const finalMsg = getInterpolatedMessage();
+    if (!finalMsg) {
+      showToast("Message content is empty!", "error");
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from('message_logs').insert({
+        recipient: msgRecipient,
+        message: finalMsg,
+        template_type: msgType,
+        status: 'sent'
+      });
+      if (error) throw error;
+      showToast("Message sent and logged successfully!");
+      setMsgRecipient('');
+      setMsgSelectedTemplate('');
+      fetchMessages();
+    } catch (err: any) {
+      showToast("Failed to log message: " + err.message, "error");
+    }
+  };
+
+  const handleSaveStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!staffName || !staffEmail) {
+      showToast("Name and Email are required!", "error");
+      return;
+    }
+    try {
+      const payload = {
+        name: staffName,
+        email: staffEmail,
+        role: staffRole,
+        phone: staffPhone,
+        is_active: staffIsActive
+      };
+      if (editingStaffId) {
+        const { error } = await supabase.from('staff_accounts').update(payload).eq('id', editingStaffId);
+        if (error) throw error;
+        showToast("Staff account updated!");
+      } else {
+        const { error } = await supabase.from('staff_accounts').insert(payload);
+        if (error) throw error;
+        showToast("Staff account registered!");
+      }
+      setStaffName('');
+      setStaffEmail('');
+      setStaffRole('staff');
+      setStaffPhone('');
+      setStaffIsActive(true);
+      setEditingStaffId(null);
+      fetchStaff();
+    } catch (err: any) {
+      showToast("Failed to save staff: " + err.message, "error");
+    }
+  };
+
+  const startEditStaff = (staff: StaffAccount) => {
+    setStaffName(staff.name);
+    setStaffEmail(staff.email);
+    setStaffRole(staff.role);
+    setStaffPhone(staff.phone || '');
+    setStaffIsActive(staff.is_active);
+    setEditingStaffId(staff.id);
+  };
+
+  const handleDeleteStaff = async (id: string) => {
+    customConfirm("Are you sure you want to delete this staff account?", async () => {
+      try {
+        const { error } = await supabase.from('staff_accounts').delete().eq('id', id);
+        if (error) throw error;
+        showToast("Staff account removed!");
+        fetchStaff();
+      } catch (err: any) {
+        showToast("Failed to delete staff: " + err.message, "error");
+      }
+    });
+  };
+
+  const handleSaveTemplate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tplName || !tplContent) {
+      showToast("Template Name and Content are required!", "error");
+      return;
+    }
+    const keys = tplPlaceholders
+      ? tplPlaceholders.split(',').map(s => s.trim()).filter(Boolean)
+      : [];
+    try {
+      const payload = {
+        name: tplName,
+        content: tplContent,
+        type: tplType,
+        placeholder_keys: keys
+      };
+      if (editingTemplateId) {
+        const { error } = await supabase.from('templates').update(payload).eq('id', editingTemplateId);
+        if (error) throw error;
+        showToast("Template updated!");
+      } else {
+        const { error } = await supabase.from('templates').insert(payload);
+        if (error) throw error;
+        showToast("Template created!");
+      }
+      setTplName('');
+      setTplContent('');
+      setTplType('whatsapp');
+      setTplPlaceholders('');
+      setEditingTemplateId(null);
+      fetchTemplates();
+    } catch (err: any) {
+      showToast("Failed to save template: " + err.message, "error");
+    }
+  };
+
+  const startEditTemplate = (tpl: Template) => {
+    setTplName(tpl.name);
+    setTplContent(tpl.content);
+    setTplType(tpl.type);
+    setTplPlaceholders(tpl.placeholder_keys ? tpl.placeholder_keys.join(', ') : '');
+    setEditingTemplateId(tpl.id);
+  };
+
+  const handleDeleteTemplate = async (id: string) => {
+    customConfirm("Are you sure you want to delete this template?", async () => {
+      try {
+        const { error } = await supabase.from('templates').delete().eq('id', id);
+        if (error) throw error;
+        showToast("Template deleted!");
+        fetchTemplates();
+      } catch (err: any) {
+        showToast("Failed to delete template: " + err.message, "error");
+      }
+    });
+  };
 
   const logoInputRef = useRef<HTMLInputElement>(null);
   const posterInputRef = useRef<HTMLInputElement>(null);
@@ -571,6 +885,10 @@ export default function Admin() {
               { id: 'documents', label: 'Documents', icon: FileText },
               { id: 'testimonials', label: 'Reviews', icon: Clock },
               { id: 'services', label: 'Services', icon: Activity },
+              { id: 'media', label: 'Media Manager', icon: ImageIcon },
+              { id: 'messages', label: 'Message Panel', icon: MessageCircle },
+              { id: 'staff', label: 'Staff Accounts', icon: Users },
+              { id: 'templates', label: 'Templates', icon: FileText },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -1879,6 +2197,601 @@ export default function Admin() {
                   <p className="text-xs text-slate-500 font-medium">
                     <strong className="text-primary">Note:</strong> These documents will be listed on the "About Us" page for public viewing. You can click on the document name above to rename it.
                   </p>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'media' && (
+              <motion.div
+                key="media"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="bg-white rounded-3xl shadow-xl border border-slate-100 p-8 text-slate-800"
+              >
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                  <div>
+                    <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter mb-1 font-display">Clinical Media & Asset Library</h2>
+                    <p className="text-xs text-slate-500 font-bold uppercase tracking-widest font-mono">Upload hero banners & promotion posters to display directly on the website</p>
+                  </div>
+                  <div>
+                    <input 
+                      type="file" 
+                      id="media-uploader-input" 
+                      accept="image/*"
+                      hidden 
+                      onChange={handleMediaUpload} 
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => document.getElementById('media-uploader-input')?.click()}
+                      className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:scale-105 transition-all text-xs uppercase cursor-pointer"
+                    >
+                      <Upload size={16} /> Upload New Media
+                    </button>
+                  </div>
+                </div>
+
+                {mediaList.length === 0 ? (
+                  <div className="py-20 text-center bg-slate-50 rounded-[3rem] border border-dashed border-slate-200">
+                    <ImageIcon size={48} className="mx-auto text-slate-200 mb-4" />
+                    <p className="text-slate-400 font-bold uppercase text-xs">No media assets in library.</p>
+                    <p className="text-xs text-slate-400 mt-2">Upload clinical images or banners to manage website assets.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {mediaList.map((item) => (
+                      <div key={item.id} className="bg-slate-50 border border-slate-150 rounded-3xl overflow-hidden group flex flex-col justify-between shadow-sm hover:shadow-md transition-all">
+                        {/* Thumbnail */}
+                        <div className="aspect-[4/3] bg-slate-200 relative overflow-hidden flex items-center justify-center border-b border-slate-100">
+                          {item.file_type?.startsWith('image/') ? (
+                            <img 
+                              src={item.file_url} 
+                              alt={item.name} 
+                              className="w-full h-full object-cover group-hover:scale-105 transition-all"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <FileText size={48} className="text-slate-400" />
+                          )}
+                          <div className="absolute top-3 right-3 flex gap-1">
+                            <button 
+                              type="button"
+                              onClick={() => deleteMediaItem(item.id)}
+                              className="p-2 bg-white/85 backdrop-blur-sm rounded-lg text-slate-400 hover:text-red-500 hover:bg-white shadow transition-all cursor-pointer"
+                              title="Delete Item"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Metadata & Actions */}
+                        <div className="p-5 flex flex-col gap-4 flex-grow justify-between">
+                          <div>
+                            <p className="font-bold text-slate-800 text-sm truncate" title={item.name}>{item.name}</p>
+                            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest mt-1">
+                              Size: {(item.file_size / 1024).toFixed(1)} KB | Uploaded: {new Date(item.created_at || '').toLocaleDateString()}
+                            </p>
+                          </div>
+
+                          <div className="flex flex-col gap-2 mt-2">
+                            <button
+                              type="button"
+                              onClick={() => useMediaAsHero(item.file_url)}
+                              className="w-full text-center bg-white border border-slate-200 hover:border-primary text-slate-700 hover:text-primary font-bold py-2 rounded-xl text-xs transition-all flex items-center justify-center gap-1 cursor-pointer"
+                            >
+                              <Check size={14} /> Set as Hero Banner
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => useMediaAsPoster(item.file_url)}
+                              className="w-full text-center bg-white border border-slate-200 hover:border-primary text-slate-700 hover:text-primary font-bold py-2 rounded-xl text-xs transition-all flex items-center justify-center gap-1 cursor-pointer"
+                            >
+                              <Plus size={14} /> Use as Clinic Poster
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {activeTab === 'messages' && (
+              <motion.div
+                key="messages"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="bg-white rounded-3xl shadow-xl border border-slate-100 p-8 text-slate-800"
+              >
+                <div className="mb-8">
+                  <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter mb-1 font-display">Communication Panel</h2>
+                  <p className="text-xs text-slate-500 font-bold uppercase tracking-widest font-mono">Draft custom alerts, parse templates, and track logged communication histories</p>
+                </div>
+
+                <div className="grid lg:grid-cols-5 gap-8">
+                  {/* Left Column: Composer */}
+                  <div className="lg:col-span-2 bg-slate-50 border border-slate-105 p-6 rounded-[2.5rem] h-fit">
+                    <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wide mb-4">Compose Broadcast Message</h3>
+                    
+                    <div className="space-y-4">
+                      {/* Recipient Input */}
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Recipient Number / Email</label>
+                        <input 
+                          type="text"
+                          required
+                          value={msgRecipient}
+                          onChange={(e) => setMsgRecipient(e.target.value)}
+                          className="w-full px-4 py-3 bg-white border border-slate-200 focus:border-primary rounded-xl outline-none font-medium text-sm text-slate-800 transition-all"
+                          placeholder="e.g. +91 9876543210 or patient@gmail.com"
+                        />
+                      </div>
+
+                      {/* Select Template dropdown */}
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Select Message Template (Optional)</label>
+                        <select
+                          value={msgSelectedTemplate}
+                          onChange={(e) => setMsgSelectedTemplate(e.target.value)}
+                          className="w-full px-4 py-3 bg-white border border-slate-200 focus:border-primary rounded-xl outline-none font-medium text-sm text-slate-800 transition-all cursor-pointer"
+                        >
+                          <option value="">-- No Template (Custom Draft) --</option>
+                          {templatesList.map(t => (
+                            <option key={t.id} value={t.id}>{t.name} ({t.type.toUpperCase()})</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Channel type option if no template selected */}
+                      {!msgSelectedTemplate && (
+                        <div>
+                          <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Channel / Type</label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {(['whatsapp', 'sms', 'email'] as const).map(ch => (
+                              <button
+                                key={ch}
+                                type="button"
+                                onClick={() => setMsgType(ch)}
+                                className={`py-2 px-3 rounded-lg text-xs font-bold capitalize border transition-all cursor-pointer ${
+                                  msgType === ch 
+                                    ? 'bg-primary/15 border-primary text-primary font-black' 
+                                    : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100'
+                                }`}
+                              >
+                                {ch}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Render dynamic variables if selected Template has variables */}
+                      {msgSelectedTemplate && Object.keys(msgVariables).length > 0 && (
+                        <div className="p-4 bg-white border border-slate-200/60 rounded-2xl space-y-3 shadow-inner">
+                          <h4 className="text-[10px] font-black text-primary uppercase tracking-wider">Template Variables</h4>
+                          {Object.keys(msgVariables).map((key) => (
+                            <div key={key}>
+                              <label className="block text-[9px] font-bold uppercase text-slate-400 mb-1">{key}</label>
+                              <input 
+                                type="text"
+                                value={msgVariables[key]}
+                                onChange={(e) => setMsgVariables({ ...msgVariables, [key]: e.target.value })}
+                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 focus:border-primary rounded-lg outline-none font-medium text-xs transition-all text-slate-750"
+                                placeholder={`Value for ${key}`}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Message Body Textarea */}
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Message Content</label>
+                        <textarea
+                          readOnly={!!msgSelectedTemplate}
+                          value={msgSelectedTemplate ? getInterpolatedMessage() : msgBody}
+                          onChange={(e) => setMsgBody(e.target.value)}
+                          rows={4}
+                          className={`w-full p-4 border border-slate-200 rounded-xl outline-none text-sm transition-all leading-relaxed ${
+                            msgSelectedTemplate ? 'bg-slate-100/80 text-slate-500 cursor-not-allowed' : 'bg-white text-slate-800 focus:border-primary'
+                          }`}
+                          placeholder="Draft message to send..."
+                        />
+                        {msgSelectedTemplate && (
+                          <span className="text-[9px] text-slate-400 italic">Content is governed by template formatting. Modify variable values above.</span>
+                        )}
+                      </div>
+
+                      {/* Dispatch Trigger */}
+                      <button
+                        type="button"
+                        onClick={handleSendMessage}
+                        className="w-full py-3 h-12 bg-primary text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:scale-[1.01] shadow-md hover:shadow-lg transition-all text-xs uppercase cursor-pointer"
+                      >
+                        <Send size={15} /> Confirm and Send Logs
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Right Column: History Log List */}
+                  <div className="lg:col-span-3">
+                    <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wide mb-4">Logged Message History ({messageLogs.length})</h3>
+                    {messageLogs.length === 0 ? (
+                      <div className="py-16 text-center bg-slate-50 rounded-[2.5rem] border border-dashed border-slate-200/80">
+                        <MessageCircle size={40} className="mx-auto text-slate-200 mb-2" />
+                        <p className="text-slate-400 font-bold uppercase text-[10px]">No communication dispatch transactions found.</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto rounded-[2rem] border border-slate-100 shadow-sm bg-white max-h-[580px] overflow-y-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-slate-50 border-b border-slate-100">
+                              <th className="py-3.5 px-5 text-[10px] font-black uppercase text-slate-400">Recipient</th>
+                              <th className="py-3.5 px-5 text-[10px] font-black uppercase text-slate-400">Message</th>
+                              <th className="py-3.5 px-5 text-[10px] font-black uppercase text-slate-400">Channel</th>
+                              <th className="py-3.5 px-5 text-[10px] font-black uppercase text-slate-400">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-50">
+                            {messageLogs.map((log) => (
+                              <tr key={log.id} className="hover:bg-slate-50/50">
+                                <td className="py-4 px-5 align-top">
+                                  <div className="font-bold text-slate-800 text-xs">{log.recipient}</div>
+                                  <div className="text-[9px] text-slate-400 font-bold mt-1 font-mono">{log.created_at ? new Date(log.created_at).toLocaleString() : ''}</div>
+                                </td>
+                                <td className="py-4 px-5 text-xs text-slate-600 align-top max-w-xs break-words">
+                                  {log.message}
+                                </td>
+                                <td className="py-4 px-5 text-xs font-bold uppercase tracking-wider text-slate-500 align-top">
+                                  {log.template_type}
+                                </td>
+                                <td className="py-4 px-5 align-top">
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 border border-emerald-200 text-emerald-600">
+                                    <Check size={10} /> SENT
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'staff' && (
+              <motion.div
+                key="staff"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="bg-white rounded-3xl shadow-xl border border-slate-100 p-8 text-slate-800"
+              >
+                <div className="mb-8">
+                  <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter mb-1 font-display">Staff Registration Table</h2>
+                  <p className="text-xs text-slate-500 font-bold uppercase tracking-widest font-mono">Create and configure credentials for clinical assistants, doctors, and specialists</p>
+                </div>
+
+                <div className="grid lg:grid-cols-5 gap-8">
+                  {/* Left Column: Form */}
+                  <form onSubmit={handleSaveStaff} className="lg:col-span-2 bg-slate-50 border border-slate-100 p-6 rounded-[2.5rem] h-fit space-y-4">
+                    <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wide">
+                      {editingStaffId ? 'Update Staff Credentials' : 'New Staff Account'}
+                    </h3>
+
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Full Name *</label>
+                      <input 
+                        type="text"
+                        required
+                        value={staffName}
+                        onChange={(e) => setStaffName(e.target.value)}
+                        className="w-full px-4 py-3 bg-white border border-slate-200 focus:border-primary rounded-xl outline-none font-medium text-sm text-slate-800"
+                        placeholder="Dr. Rajesh Varma or Nurse Shreya"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Official Email Address *</label>
+                      <input 
+                        type="email"
+                        required
+                        value={staffEmail}
+                        onChange={(e) => setStaffEmail(e.target.value)}
+                        className="w-full px-4 py-3 bg-white border border-slate-200 focus:border-primary rounded-xl outline-none font-medium text-sm text-slate-800"
+                        placeholder="staff@apollodental.com"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Designation Role</label>
+                        <select
+                          value={staffRole}
+                          onChange={(e) => setStaffRole(e.target.value as any)}
+                          className="w-full px-4 py-3 bg-white border border-slate-200 focus:border-primary rounded-xl outline-none font-bold text-xs text-slate-800 cursor-pointer"
+                        >
+                          <option value="staff">Clinical Support</option>
+                          <option value="doctor">Medical Doctor</option>
+                          <option value="admin">System Admin</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Contact Phone</label>
+                        <input 
+                          type="text"
+                          value={staffPhone}
+                          onChange={(e) => setStaffPhone(e.target.value)}
+                          className="w-full px-4 py-3 bg-white border border-slate-200 focus:border-primary rounded-xl outline-none font-medium text-sm text-slate-800"
+                          placeholder="Mobile line"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Active Checkbox */}
+                    <div className="flex items-center gap-3 py-1">
+                      <input 
+                        type="checkbox"
+                        id="staff-active"
+                        checked={staffIsActive}
+                        onChange={(e) => setStaffIsActive(e.target.checked)}
+                        className="w-4.5 h-4.5 rounded border-slate-300 text-primary focus:ring-primary cursor-pointer animate-none"
+                      />
+                      <label htmlFor="staff-active" className="text-xs font-bold text-slate-750 cursor-pointer select-none">Active Duty / Enable Access</label>
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        type="submit"
+                        className="flex-grow py-3 h-12 bg-primary text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:scale-[1.01] shadow cursor-pointer text-xs uppercase"
+                      >
+                        <Check size={16} /> {editingStaffId ? 'Save Changes' : 'Register Account'}
+                      </button>
+                      {editingStaffId && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStaffName('');
+                            setStaffEmail('');
+                            setStaffRole('staff');
+                            setStaffPhone('');
+                            setStaffIsActive(true);
+                            setEditingStaffId(null);
+                          }}
+                          className="px-4 py-3 h-12 bg-slate-200 border border-slate-300 text-slate-700 hover:bg-slate-300 rounded-xl font-bold text-xs uppercase cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+                  </form>
+
+                  {/* Right Column: Cards Grid */}
+                  <div className="lg:col-span-3 space-y-4">
+                    <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wide">Registered Officers ({staffAccounts.length})</h3>
+                    {staffAccounts.length === 0 ? (
+                      <div className="py-20 text-center bg-slate-50 rounded-[3rem] border border-dashed border-slate-200">
+                        <Users size={48} className="mx-auto text-slate-200 mb-3" />
+                        <p className="text-slate-400 font-bold uppercase text-xs">No clinical staff registered.</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {staffAccounts.map((staff) => (
+                          <div key={staff.id} className="p-6 bg-slate-50 hover:bg-slate-100 rounded-3xl border border-slate-150 transition-all flex flex-col justify-between group">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <span className={`inline-block px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                                  staff.role === 'admin' 
+                                    ? 'bg-purple-100 border border-purple-200 text-purple-700' 
+                                    : staff.role === 'doctor'
+                                      ? 'bg-blue-100 border border-blue-200 text-blue-700'
+                                      : 'bg-emerald-100 border border-emerald-200 text-emerald-700'
+                                }`}>
+                                  {staff.role}
+                                </span>
+                                <h4 className="font-bold text-slate-800 text-sm mt-2">{staff.name}</h4>
+                                <p className="text-xs text-slate-500 mt-0.5 font-medium">{staff.email}</p>
+                                {staff.phone && <p className="text-[10px] text-slate-400 mt-1 font-mono">📱 {staff.phone}</p>}
+                              </div>
+                              <div className="flex gap-1.5 opacity-60 group-hover:opacity-100 transition-all">
+                                <button
+                                  type="button"
+                                  onClick={() => startEditStaff(staff)}
+                                  className="p-2 text-slate-500 hover:text-primary hover:bg-white rounded-lg transition-all cursor-pointer"
+                                  title="Edit staff details"
+                                >
+                                  <Edit size={16} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteStaff(staff.id)}
+                                  className="p-2 text-slate-500 hover:text-red-500 hover:bg-white rounded-lg transition-all cursor-pointer"
+                                  title="Delete Account"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="border-t border-slate-200/60 mt-4 pt-3 flex justify-between items-center text-[10px] font-black uppercase tracking-wider text-slate-400">
+                              <span>Status</span>
+                              {staff.is_active ? (
+                                <span className="text-emerald-500 font-bold">● Active on Duty</span>
+                              ) : (
+                                <span className="text-slate-400 font-bold">○ On Leave</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'templates' && (
+              <motion.div
+                key="templates"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="bg-white rounded-3xl shadow-xl border border-slate-100 p-8 text-slate-800"
+              >
+                <div className="mb-8">
+                  <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter mb-1 font-display">Broadcast & SMS Templates</h2>
+                  <p className="text-xs text-slate-500 font-bold uppercase tracking-widest font-mono">Create and design structured message templates with placeholders for variable automation</p>
+                </div>
+
+                <div className="grid lg:grid-cols-5 gap-8">
+                  {/* Left Column: Form */}
+                  <form onSubmit={handleSaveTemplate} className="lg:col-span-2 bg-slate-50 border border-slate-100 p-6 rounded-[2.5rem] h-fit space-y-4">
+                    <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wide">
+                      {editingTemplateId ? 'Configure Template Settings' : 'New Template Preset'}
+                    </h3>
+
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Friendly Name / alias *</label>
+                      <input 
+                        type="text"
+                        required
+                        value={tplName}
+                        onChange={(e) => setTplName(e.target.value)}
+                        className="w-full px-4 py-3 bg-white border border-slate-200 focus:border-primary rounded-xl outline-none font-medium text-sm text-slate-800"
+                        placeholder="e.g. Booking Confirmation or Welcome SMS"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Channel / Type</label>
+                        <select
+                          value={tplType}
+                          onChange={(e) => setTplType(e.target.value as any)}
+                          className="w-full px-4 py-3 bg-white border border-slate-200 focus:border-primary rounded-xl outline-none font-bold text-xs text-slate-800 cursor-pointer"
+                        >
+                          <option value="whatsapp">WhatsApp Text</option>
+                          <option value="sms">SMS Text</option>
+                          <option value="email">Email Broadcast</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Placeholders (Comma Separated)</label>
+                        <input 
+                          type="text"
+                          value={tplPlaceholders}
+                          onChange={(e) => setTplPlaceholders(e.target.value)}
+                          className="w-full px-4 py-3 bg-white border border-slate-200 focus:border-primary rounded-xl outline-none font-medium text-sm text-slate-800"
+                          placeholder="e.g. name, date, doctor"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Template Content *</label>
+                      <textarea
+                        required
+                        value={tplContent}
+                        onChange={(e) => setTplContent(e.target.value)}
+                        rows={5}
+                        className="w-full p-4 border border-slate-200 rounded-xl outline-none text-sm transition-all bg-white text-slate-800 focus:border-primary leading-relaxed"
+                        placeholder="Dear {{name}}, your booking is set for {{date}}."
+                      />
+                      <span className="text-[9px] text-slate-400 font-medium block mt-1 tracking-wide uppercase leading-normal">
+                        Wrap your variables with double curly brackets like <strong className="text-primary">{"{{name}}"}</strong> to parse them during mass message routing.
+                      </span>
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        type="submit"
+                        className="flex-grow py-3 h-12 bg-primary text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:scale-[1.01] shadow cursor-pointer text-xs uppercase"
+                      >
+                        <Check size={16} /> {editingTemplateId ? 'Update Preset' : 'Add Preset'}
+                      </button>
+                      {editingTemplateId && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTplName('');
+                            setTplContent('');
+                            setTplType('whatsapp');
+                            setTplPlaceholders('');
+                            setEditingTemplateId(null);
+                          }}
+                          className="px-4 py-3 h-12 bg-slate-200 border border-slate-300 text-slate-700 hover:bg-slate-300 rounded-xl font-bold text-xs uppercase cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+                  </form>
+
+                  {/* Right Column: Custom Presets Table */}
+                  <div className="lg:col-span-3 space-y-4">
+                    <h3 className="font-extrabold text-slate-900 text-sm uppercase tracking-wide">Saved Communication Presets ({templatesList.length})</h3>
+                    {templatesList.length === 0 ? (
+                      <div className="py-20 text-center bg-slate-50 rounded-[3rem] border border-dashed border-slate-200">
+                        <FileText size={48} className="mx-auto text-slate-200 mb-3" />
+                        <p className="text-slate-400 font-bold uppercase text-xs">No preset templates found.</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-4">
+                        {templatesList.map((tpl) => (
+                          <div key={tpl.id} className="p-6 bg-slate-50 hover:bg-slate-100 rounded-3xl border border-slate-150 transition-all flex flex-col justify-between group">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <span className="inline-block px-2.5 py-0.5 bg-slate-200 border border-slate-300 text-slate-700 rounded-full text-[9px] font-black uppercase tracking-widest leading-none">
+                                  {tpl.type}
+                                </span>
+                                <h4 className="font-bold text-slate-800 text-sm mt-3">{tpl.name}</h4>
+                                <p className="text-xs text-slate-600 mt-2 bg-white/80 p-4 border border-slate-200/60 rounded-2xl italic tracking-wide break-all whitespace-pre-line leading-relaxed">
+                                  "{tpl.content}"
+                                </p>
+                              </div>
+                              <div className="flex gap-1.5 opacity-60 group-hover:opacity-100 transition-all">
+                                <button
+                                  type="button"
+                                  onClick={() => startEditTemplate(tpl)}
+                                  className="p-2 text-slate-500 hover:text-primary hover:bg-white rounded-lg transition-all cursor-pointer"
+                                  title="Edit Template"
+                                >
+                                  <Edit size={16} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteTemplate(tpl.id)}
+                                  className="p-2 text-slate-500 hover:text-red-500 hover:bg-white rounded-lg transition-all cursor-pointer"
+                                  title="Delete Preset"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </div>
+
+                            {tpl.placeholder_keys && tpl.placeholder_keys.length > 0 && (
+                              <div className="border-t border-slate-200/60 mt-4 pt-3 flex flex-wrap gap-1.5 items-center">
+                                <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Placeholders:</span>
+                                {tpl.placeholder_keys.map(k => (
+                                  <span key={k} className="px-2 py-0.5 bg-primary/10 border border-primary/20 text-primary rounded-md text-[8px] font-mono leading-none font-bold">
+                                    {`{{${k}}}`}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             )}

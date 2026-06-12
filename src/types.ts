@@ -74,6 +74,43 @@ export interface ClinicDocument {
   uploadDate: string;
 }
 
+export interface Media {
+  id: string;
+  name: string;
+  file_url: string; // Base64 or URL
+  file_type?: string;
+  file_size?: number;
+  created_at?: string;
+}
+
+export interface MessageLog {
+  id: string;
+  recipient: string;
+  message: string;
+  status: 'sent' | 'pending' | 'failed';
+  template_type?: string;
+  created_at?: string;
+}
+
+export interface StaffAccount {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'staff' | 'doctor';
+  phone?: string;
+  is_active: boolean;
+  created_at?: string;
+}
+
+export interface Template {
+  id: string;
+  name: string;
+  content: string;
+  type: 'whatsapp' | 'sms' | 'email';
+  placeholder_keys?: string[];
+  created_at?: string;
+}
+
 export interface PromotionPopup {
   enabled: boolean;
   title: string;
