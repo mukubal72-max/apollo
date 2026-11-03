@@ -24,12 +24,20 @@ function AppContent() {
 
   // Dynamic Favicon setup
   useEffect(() => {
-    // Update Favicon if custom logo exists
-    if (siteConfig.logo) {
-      const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
-      if (link) {
-        link.href = siteConfig.logo;
-      }
+    const targetFavicon = (siteConfig.logo && !siteConfig.logo.includes('apolloclinic.com/assets/images/logo.png'))
+      ? siteConfig.logo
+      : '/assets/aistudio/Apollo_Logo_3d24d242.PNG';
+
+    const links = document.querySelectorAll("link[rel*='icon']") as NodeListOf<HTMLLinkElement>;
+    if (links.length > 0) {
+      links.forEach(link => {
+        link.href = targetFavicon;
+      });
+    } else {
+      const link = document.createElement('link');
+      link.rel = 'icon';
+      link.href = targetFavicon;
+      document.head.appendChild(link);
     }
   }, [siteConfig.logo]);
 
@@ -87,10 +95,19 @@ function AppContent() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
             <div className="md:col-span-2">
               <div className="flex items-center gap-4 mb-6">
-                <img src={siteConfig.logo || "https://www.apolloclinic.com/assets/images/logo.png"} alt="Apollo" className="h-12 w-auto bg-white p-2 rounded-xl" />
-                <h3 className="text-xl md:text-2xl font-black uppercase tracking-tight">
-                  <span className="text-secondary">Apollo</span> <span className="text-white">Clinic Basti</span>
-                </h3>
+                <div className="bg-white p-2.5 rounded-2xl shadow-md inline-flex items-center justify-center shrink-0">
+                  <img 
+                    src={(siteConfig.logo && !siteConfig.logo.includes('apolloclinic.com/assets/images/logo.png')) ? siteConfig.logo : "/assets/aistudio/Apollo_Logo_3d24d242.PNG"} 
+                    alt="Apollo Clinic Basti" 
+                    className="h-14 sm:h-16 w-auto object-contain" 
+                  />
+                </div>
+                <div>
+                  <h3 className="text-xl md:text-2xl font-black uppercase tracking-tight leading-none">
+                    <span className="text-secondary">Apollo</span> <span className="text-white">Clinic Basti</span>
+                  </h3>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-white/70 mt-1">Licensee: C Square Medco LLP</p>
+                </div>
               </div>
               <p className="text-white/80 text-sm leading-relaxed mb-8 max-w-md uppercase font-medium">
                 Providing top-tier healthcare and diagnostic services with specialized care in Basti and surrounding regions.

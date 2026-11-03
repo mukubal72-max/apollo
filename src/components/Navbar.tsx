@@ -19,6 +19,10 @@ export default function Navbar() {
     { name: 'Contact Us', path: '/contact' },
   ];
 
+  const logoSrc = (siteConfig.logo && !siteConfig.logo.includes('apolloclinic.com/assets/images/logo.png'))
+    ? siteConfig.logo
+    : "/assets/aistudio/Apollo_Logo_3d24d242.PNG";
+
   return (
     <header className="sticky top-0 z-50 shadow-sm border-b border-slate-200">
       {/* Top Bar - Orange */}
@@ -46,8 +50,8 @@ export default function Navbar() {
           <Link to="/" className="flex items-center gap-4">
             <div className="flex flex-col items-center py-1">
               <img 
-                src={siteConfig.logo || "https://www.apolloclinic.com/assets/images/logo.png"} 
-                alt={siteConfig.name} 
+                src={logoSrc} 
+                alt={siteConfig.name || "Apollo Clinic Basti"} 
                 className="h-16 md:h-20 lg:h-24 w-auto object-contain transition-all duration-300 hover:scale-[1.03]" 
               />
             </div>

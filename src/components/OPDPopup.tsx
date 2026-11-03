@@ -232,7 +232,7 @@ export default function OPDPopup() {
             {/* Header */}
             <div className="bg-white border-b border-slate-100 p-6 flex justify-between items-center shrink-0">
               <div className="flex items-center gap-6">
-                <img src={siteConfig.logo || "https://www.apolloclinic.com/assets/images/logo.png"} alt="Apollo" className="h-10 hidden sm:block" />
+                <img src={(siteConfig.logo && !siteConfig.logo.includes('apolloclinic.com/assets/images/logo.png')) ? siteConfig.logo : "/assets/aistudio/Apollo_Logo_3d24d242.PNG"} alt="Apollo Clinic Basti" className="h-10 w-auto object-contain hidden sm:block" />
                 <div className="w-px h-10 bg-slate-200 hidden sm:block"></div>
                 <div>
                    <h2 className="text-xl md:text-2xl font-black text-primary uppercase tracking-tight leading-none font-display">

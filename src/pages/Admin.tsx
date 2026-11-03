@@ -1024,15 +1024,11 @@ export default function Admin() {
                           <h3 className="text-sm font-black uppercase text-slate-400 tracking-widest mb-6">Clinic Logo</h3>
                           <div className="flex flex-col sm:flex-row items-center gap-8">
                             <div className="w-32 h-32 bg-white rounded-2xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden">
-                              {(siteConfig.logo || "https://www.apolloclinic.com/assets/images/logo.png") ? (
-                                <img 
-                                  src={siteConfig.logo || "https://www.apolloclinic.com/assets/images/logo.png"} 
-                                  alt="Clinic Logo" 
-                                  className={`w-full h-full object-contain p-2 ${!siteConfig.logo ? 'opacity-30 grayscale' : ''}`} 
-                                />
-                              ) : (
-                                <ImageIcon className="text-slate-200" size={48} />
-                              )}
+                              <img 
+                                src={(siteConfig.logo && !siteConfig.logo.includes('apolloclinic.com/assets/images/logo.png')) ? siteConfig.logo : "/assets/aistudio/Apollo_Logo_3d24d242.PNG"} 
+                                alt="Clinic Logo" 
+                                className="w-full h-full object-contain p-2" 
+                              />
                             </div>
                             <div className="space-y-4">
                               {!siteConfig.logo && <p className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">Showing Default Apollo Logo</p>}
