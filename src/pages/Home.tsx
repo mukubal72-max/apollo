@@ -675,9 +675,9 @@ export default function Home() {
             >
               <div className="absolute inset-0 bg-secondary/20 blur-3xl -m-10 rounded-full" />
               <img 
-                src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=800" 
-                className="rounded-[3rem] shadow-2xl border-8 border-white/10 relative z-10 w-full max-w-md"
-                alt="Medical Care"
+                src="/assets/aistudio/APOLLO_Banner_0ed0eadc.jpeg" 
+                className="rounded-[3rem] shadow-2xl border-8 border-white/10 relative z-10 w-full max-w-md object-cover h-[340px]"
+                alt="Apollo Clinic Basti" 
                 referrerPolicy="no-referrer"
               />
             </motion.div>

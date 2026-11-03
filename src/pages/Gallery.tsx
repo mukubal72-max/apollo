@@ -11,29 +11,100 @@ import {
   ExternalLink, 
   Download, 
   Eye, 
-  HelpCircle 
+  HelpCircle,
+  PhoneCall,
+  Calendar
 } from 'lucide-react';
 
+interface PosterMeta {
+  title: string;
+  subtitle: string;
+  category: 'Specialist OPD' | 'Dental' | 'Health Packages' | 'General';
+}
+
+const POSTER_METADATA: Record<string, PosterMeta> = {
+  'Apollo_Neuro': {
+    title: 'Dr. Diwakar Shankar - Neurosurgery & Spine',
+    subtitle: 'Senior Specialist from Apollo Medics Super Speciality Hospital Lucknow • Monthly Visiting OPD',
+    category: 'Specialist OPD'
+  },
+  'Apollo_Dental': {
+    title: 'Dr. Vikas Kumar - Apollo Dental Speciality Clinic',
+    subtitle: 'B.D.S. Dental Surgeon • Mon to Fri 11:00 AM - 05:00 PM',
+    category: 'Dental'
+  },
+  'Apollo_Gynno': {
+    title: 'Dr. Shivangi Chaudhary - Gynecology & Obstetrics',
+    subtitle: 'M.B.B.S., M.S., DNB • Laparoscopic Surgery & IVF Specialist • Tue & Fri 2:00 PM - 4:00 PM',
+    category: 'Specialist OPD'
+  },
+  'Apollo_Child': {
+    title: 'Dr. A. K. Patel - Pediatrics & Child Care',
+    subtitle: 'M.B.B.S., DNB (Pediatrics) • Ex Cloudnine Hospital Delhi • Daily OPD Schedule',
+    category: 'Specialist OPD'
+  },
+  'Apollo_Gen_Physician': {
+    title: 'Dr. Ashraf Jamal - General Physician',
+    subtitle: 'M.B.B.S., Dip. Card (Ex-Resident BHU) • Mon to Sat 2:00 PM - 6:00 PM',
+    category: 'Specialist OPD'
+  },
+  'Apollo_OPD': {
+    title: 'Apollo Super Speciality OPD Schedule',
+    subtitle: 'Visiting Senior Specialists: Neuro, Cardio, Oncology, Urology from Apollo Hospital Lucknow',
+    category: 'Specialist OPD'
+  },
+  'Apolloo_health_check_packages': {
+    title: 'Apollo Preventive Health Check Packages',
+    subtitle: 'Primary, Whole Body, Executive, Men & Women Screening with 10% Discount on Home Collection',
+    category: 'Health Packages'
+  }
+};
+
+function getPosterInfo(imgUrl: string, index: number): PosterMeta {
+  for (const [key, meta] of Object.entries(POSTER_METADATA)) {
+    if (imgUrl.includes(key)) return meta;
+  }
+  return {
+    title: `Apollo Clinic Poster ${index + 1}`,
+    subtitle: 'Official Medical Update & Diagnostic Service • Apollo Clinic Basti',
+    category: 'General'
+  };
+}
+
 export default function Gallery() {
-  const { siteConfig } = useAppContext();
+  const { siteConfig, setIsOpdPopupOpen } = useAppContext();
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [zoomScale, setZoomScale] = useState<number>(1);
+  const [activeFilter, setActiveFilter] = useState<string>('All');
 
+  // Exact 7 authentic compressed posters from Apollo Clinic Basti
   const fallbackImages = [
-    "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1581595221475-ad663b52bc5b?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1538108197017-c1a986ded3d7?auto=format&fit=crop&q=80&w=800",
+    "/assets/aistudio/Apollo_Neuro_d157e19e.jpeg",
+    "/assets/aistudio/Apollo_Dental_b9814089.jpeg",
+    "/assets/aistudio/Apollo_Gynno_f9d7aea8.jpeg",
+    "/assets/aistudio/Apollo_Child__1__e7446587.jpeg",
+    "/assets/aistudio/Apollo_Gen_Physician_e09ab5f4.jpeg",
+    "/assets/aistudio/Apollo_OPD__1__c3ebad57.jpeg",
+    "/assets/aistudio/Apolloo_health_check_packages_6b14f49a.jpeg",
   ];
 
   const images = useMemo(() => {
     if (siteConfig.gallery && siteConfig.gallery.length > 0) {
-      return siteConfig.gallery;
+      // Discard any legacy dummy unsplash URLs
+      const filtered = siteConfig.gallery.filter(g => !g.includes('unsplash.com'));
+      if (filtered.length > 0) return filtered;
     }
     return fallbackImages;
   }, [siteConfig.gallery]);
+
+  // Filtered gallery view
+  const filteredImages = useMemo(() => {
+    if (activeFilter === 'All') return images;
+    return images.filter((img, i) => {
+      const meta = getPosterInfo(img, i);
+      return meta.category === activeFilter;
+    });
+  }, [images, activeFilter]);
 
   // Handle keyboard navigation & lock background scroll
   useEffect(() => {
@@ -56,13 +127,13 @@ export default function Gallery() {
       document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [selectedIdx, images]);
+  }, [selectedIdx, filteredImages]);
 
   const handlePrev = () => {
     setZoomScale(1);
     setSelectedIdx((prev) => {
       if (prev === null) return null;
-      return prev === 0 ? images.length - 1 : prev - 1;
+      return prev === 0 ? filteredImages.length - 1 : prev - 1;
     });
   };
 
@@ -70,7 +141,7 @@ export default function Gallery() {
     setZoomScale(1);
     setSelectedIdx((prev) => {
       if (prev === null) return null;
-      return prev === images.length - 1 ? 0 : prev + 1;
+      return prev === filteredImages.length - 1 ? 0 : prev + 1;
     });
   };
 
@@ -95,7 +166,7 @@ export default function Gallery() {
     try {
       const link = document.createElement('a');
       link.href = imgUrl;
-      link.download = `apollo-clinic-basti-poster-${index + 1}.png`;
+      link.download = `apollo-clinic-basti-poster-${index + 1}.jpeg`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -104,70 +175,103 @@ export default function Gallery() {
     }
   };
 
+  const currentPoster = selectedIdx !== null ? filteredImages[selectedIdx] : null;
+  const currentPosterInfo = currentPoster ? getPosterInfo(currentPoster, selectedIdx!) : null;
+
   return (
     <div className="min-h-screen bg-slate-50 pt-20 md:pt-32 pb-24">
       <div className="container mx-auto px-6 md:px-8">
-        <div className="mb-12 md:mb-20 text-center md:text-left">
-          <span className="text-[10px] font-black uppercase text-secondary tracking-[0.2em] mb-4 block">Visual Tour</span>
-          <h1 className="text-4xl md:text-6xl font-black text-slate-900 uppercase tracking-tighter mb-6 leading-none">
-            Our <span className="text-primary">Facilities</span>
-          </h1>
-          <p className="text-lg md:text-xl text-slate-500 font-medium max-w-2xl leading-relaxed">
-            Take a look at our state-of-the-art clinic facilities and advanced medical departments in Basti.
-          </p>
+        
+        {/* Header Section */}
+        <div className="mb-10 text-center md:text-left flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <span className="text-[10px] font-black uppercase text-secondary tracking-[0.2em] mb-4 block">Official Posters & Gallery</span>
+            <h1 className="text-4xl md:text-6xl font-black text-slate-900 uppercase tracking-tighter mb-4 leading-none">
+              Clinic <span className="text-primary">Gallery</span>
+            </h1>
+            <p className="text-base md:text-lg text-slate-500 font-medium max-w-2xl leading-relaxed">
+              Explore authentic notices, specialist OPD schedules, pediatric, dental, and preventive health package posters for Apollo Clinic Basti.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2 justify-center md:justify-end">
+            {['All', 'Specialist OPD', 'Dental', 'Health Packages'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => {
+                  setActiveFilter(tab);
+                  setSelectedIdx(null);
+                }}
+                className={`px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                  activeFilter === tab
+                    ? 'bg-primary text-white shadow-lg shadow-primary/30 scale-105'
+                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                {tab === 'All' ? `All Posters (${images.length})` : tab}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 border-t border-slate-100 pt-12">
-          {images.map((img, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              viewport={{ once: true }}
-              onClick={() => setSelectedIdx(i)}
-              className="group relative h-[360px] md:h-[440px] rounded-[2.5rem] md:rounded-[3rem] overflow-hidden shadow-xl border border-slate-200 bg-white cursor-pointer hover:border-primary/40 transition-all duration-300"
-            >
-              <img 
-                src={img} 
-                alt={`Clinic Facility Poster ${i + 1}`} 
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                referrerPolicy="no-referrer"
-              />
-              
-              {/* Eye Catchy Dark legibility gradient overlay (Default visible) */}
-              <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none transition-opacity duration-300 group-hover:opacity-0" />
-
-              {/* Eye Catchy Magnifier HUD details on hover */}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-8 md:p-10 z-10">
-                <div className="flex justify-end">
-                  <span className="bg-white/90 backdrop-blur-sm text-primary font-black uppercase text-[10px] tracking-wider px-3 py-1.5 rounded-full shadow-lg">
-                    Expand Details
-                  </span>
-                </div>
-                
-                <div className="flex flex-col items-start">
-                  <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center shadow-lg mb-4 transform scale-75 group-hover:scale-100 transition-transform duration-300">
-                    <Eye size={20} className="text-white" />
+        {/* Gallery Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 border-t border-slate-200/80 pt-10">
+          {filteredImages.map((img, i) => {
+            const meta = getPosterInfo(img, i);
+            return (
+              <motion.div
+                key={img}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.08 }}
+                viewport={{ once: true }}
+                onClick={() => setSelectedIdx(i)}
+                className="group relative h-[420px] md:h-[480px] rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-200 bg-slate-950 cursor-pointer hover:border-secondary/60 hover:shadow-2xl transition-all duration-300 flex flex-col"
+              >
+                {/* Poster Display with high fidelity contain */}
+                <div className="relative flex-1 w-full overflow-hidden bg-slate-900 flex items-center justify-center p-3">
+                  <img 
+                    src={img} 
+                    alt={meta.title} 
+                    className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-[1.03]"
+                    referrerPolicy="no-referrer"
+                    loading="lazy"
+                  />
+                  {/* Category Pill Tag */}
+                  <div className="absolute top-4 left-4 z-10">
+                    <span className="bg-primary/90 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full shadow-md border border-white/10">
+                      {meta.category}
+                    </span>
                   </div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-[#f39223] mb-1">Clinic Infrastructure Poster</p>
-                  <h3 className="text-white font-black text-sm uppercase tracking-wider">Expand To Fullscreen View</h3>
-                </div>
-              </div>
 
-              {/* Static simple bottom legend displayed by default */}
-              <div className="absolute bottom-0 inset-x-0 p-8 md:p-10 group-hover:hidden transition-all pointer-events-none z-10 flex flex-col">
-                <p className="text-[10px] font-black uppercase tracking-widest text-[#f39223] mb-1 drop-shadow-sm">Clinical Poster {i + 1}</p>
-                <p className="text-white font-black uppercase tracking-widest text-xs truncate drop-shadow-md">Tap to view full details</p>
-              </div>
-            </motion.div>
-          ))}
+                  {/* Expand Overlay Pill */}
+                  <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <span className="bg-secondary/90 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full shadow-md flex items-center gap-1.5">
+                      <Eye size={12} /> Click To View
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card Footer Details */}
+                <div className="p-5 bg-white border-t border-slate-100 flex items-center justify-between gap-4 z-10">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-secondary truncate">{meta.category}</p>
+                    <h3 className="text-slate-900 font-black text-sm uppercase tracking-tight truncate">{meta.title}</h3>
+                    <p className="text-slate-500 text-xs font-medium truncate mt-0.5">{meta.subtitle}</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-2xl bg-slate-100 group-hover:bg-primary group-hover:text-white text-slate-700 flex items-center justify-center shrink-0 transition-colors shadow-sm">
+                    <Eye size={18} />
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
 
       {/* Lightbox / Fullscreen Viewer */}
       <AnimatePresence>
-        {selectedIdx !== null && (
+        {selectedIdx !== null && currentPoster && currentPosterInfo && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -177,18 +281,21 @@ export default function Gallery() {
             aria-modal="true"
           >
             {/* Top Toolbar */}
-            <div className="flex items-center justify-between px-6 py-4 bg-slate-900/80 border-b border-white/5 backdrop-blur-md z-30 shrink-0">
+            <div className="flex items-center justify-between px-6 py-4 bg-slate-900/90 border-b border-white/10 backdrop-blur-md z-30 shrink-0">
               {/* Title / Counter */}
               <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4 select-none">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-secondary animate-pulse"></span>
                   <span className="text-xs uppercase font-black text-secondary tracking-widest">
-                    Interactive Lightbox
+                    {currentPosterInfo.category}
                   </span>
                 </div>
                 <div className="hidden md:block w-px h-4 bg-white/20"></div>
-                <span className="text-white font-black text-xs uppercase tracking-wider">
-                  Poster {selectedIdx + 1} of {images.length}
+                <span className="text-white font-black text-xs uppercase tracking-wider truncate max-w-xs md:max-w-md">
+                  {currentPosterInfo.title}
+                </span>
+                <span className="text-slate-400 font-bold text-xs">
+                  ({selectedIdx + 1} of {filteredImages.length})
                 </span>
                 {zoomScale > 1 && (
                   <span className="text-[10px] bg-secondary text-white font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">
@@ -204,7 +311,7 @@ export default function Gallery() {
                   <button 
                     onClick={handleZoomOut}
                     disabled={zoomScale === 1}
-                    className="p-2 text-white hover:text-secondary disabled:opacity-40 transition-colors"
+                    className="p-2 text-white hover:text-secondary disabled:opacity-40 transition-colors cursor-pointer"
                     title="Zoom Out"
                   >
                     <ZoomOut size={16} />
@@ -212,7 +319,7 @@ export default function Gallery() {
                   <button 
                     onClick={handleResetZoom}
                     disabled={zoomScale === 1}
-                    className="p-2 text-white hover:text-secondary disabled:opacity-40 transition-colors"
+                    className="p-2 text-white hover:text-secondary disabled:opacity-40 transition-colors cursor-pointer"
                     title="Reset Zoom"
                   >
                     <RotateCcw size={15} />
@@ -220,30 +327,30 @@ export default function Gallery() {
                   <button 
                     onClick={handleZoomIn}
                     disabled={zoomScale === 3}
-                    className="p-2 text-white hover:text-secondary disabled:opacity-40 transition-colors"
+                    className="p-2 text-white hover:text-secondary disabled:opacity-40 transition-colors cursor-pointer"
                     title="Zoom In"
                   >
                     <ZoomIn size={16} />
                   </button>
                 </div>
 
-                {/* Open in New Tab - DIRECT FULFILLMENT */}
+                {/* Open in New Tab */}
                 <a 
-                  href={images[selectedIdx]} 
+                  href={currentPoster} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="p-3 bg-white/5 hover:bg-white/15 text-white/90 hover:text-white rounded-2xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider transition-all border border-white/15"
-                  title="Open image in full size / download in raw tab"
+                  className="p-3 bg-white/5 hover:bg-white/15 text-white/90 hover:text-white rounded-2xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider transition-all border border-white/15 cursor-pointer"
+                  title="Open full resolution poster in a new tab"
                 >
                   <ExternalLink size={16} className="text-secondary" />
-                  <span className="hidden md:inline">Open in New Tab</span>
+                  <span className="hidden md:inline">Full Size</span>
                 </a>
 
                 {/* Download */}
                 <button 
-                  onClick={() => handleDownload(images[selectedIdx!], selectedIdx!)}
-                  className="p-3 bg-white/5 hover:bg-white/15 text-white/90 hover:text-white rounded-2xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider transition-all border border-white/15"
-                  title="Download picture locally"
+                  onClick={() => handleDownload(currentPoster, selectedIdx!)}
+                  className="p-3 bg-white/5 hover:bg-white/15 text-white/90 hover:text-white rounded-2xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider transition-all border border-white/15 cursor-pointer"
+                  title="Download poster"
                 >
                   <Download size={16} />
                   <span className="hidden md:inline">Download</span>
@@ -260,21 +367,21 @@ export default function Gallery() {
               </div>
             </div>
 
-            {/* Main Interactive Stage */}
+            {/* Main Stage */}
             <div className="relative flex-1 flex items-center justify-between px-2 sm:px-6 md:px-12 py-4 select-none overflow-hidden z-20">
               {/* Left Arrow */}
               <button 
                 onClick={handlePrev}
-                className="p-4 rounded-3xl bg-slate-900/60 border border-white/10 hover:border-secondary text-white hover:text-secondary transition-all hover:scale-110 shrink-0 z-30"
+                className="p-4 rounded-3xl bg-slate-900/80 border border-white/10 hover:border-secondary text-white hover:text-secondary transition-all hover:scale-110 shrink-0 z-30 cursor-pointer"
                 aria-label="Previous Poster"
               >
                 <ChevronLeft size={24} />
               </button>
 
-              {/* Central Dynamic Image viewport with optional zoom/scroll */}
-              <div className="flex-1 h-full flex items-center justify-center overflow-auto p-4 relative">
+              {/* Central Dynamic Image Viewport */}
+              <div className="flex-1 h-full flex items-center justify-center overflow-auto p-2 sm:p-4 relative">
                 <motion.div 
-                  key={selectedIdx}
+                  key={currentPoster}
                   initial={{ scale: 0.95, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0.95, opacity: 0 }}
@@ -282,10 +389,10 @@ export default function Gallery() {
                   className="max-w-full max-h-full flex items-center justify-center"
                 >
                   <img 
-                    src={images[selectedIdx]} 
-                    alt={`Apollo Basti facility ${selectedIdx + 1}`} 
+                    src={currentPoster} 
+                    alt={currentPosterInfo.title} 
                     style={{ transform: `scale(${zoomScale})`, transformOrigin: 'center center' }}
-                    className="max-w-[85vw] max-h-[70vh] object-contain rounded-2xl shadow-2xl border border-white/10 transition-transform duration-300 ease-out"
+                    className="max-w-[85vw] max-h-[72vh] object-contain rounded-2xl shadow-2xl border border-white/15 transition-transform duration-300 ease-out"
                     referrerPolicy="no-referrer"
                   />
                 </motion.div>
@@ -294,26 +401,42 @@ export default function Gallery() {
               {/* Right Arrow */}
               <button 
                 onClick={handleNext}
-                className="p-4 rounded-3xl bg-slate-900/60 border border-white/10 hover:border-secondary text-white hover:text-secondary transition-all hover:scale-110 shrink-0 z-30"
+                className="p-4 rounded-3xl bg-slate-900/80 border border-white/10 hover:border-secondary text-white hover:text-secondary transition-all hover:scale-110 shrink-0 z-30 cursor-pointer"
                 aria-label="Next Poster"
               >
                 <ChevronRight size={24} />
               </button>
             </div>
 
-            {/* Bottom Legend / Instructions */}
-            <div className="bg-slate-950/90 border-t border-white/5 py-5 px-8 text-center shrink-0 z-30">
-              <div className="max-w-xl mx-auto flex flex-col items-center gap-1.5">
-                <p className="text-white/80 font-black text-sm uppercase tracking-widest font-display">
-                  Apollo Clinic Basti Infrastructure & clinical updates
+            {/* Bottom Details & Booking Action */}
+            <div className="bg-slate-950/95 border-t border-white/10 py-4 px-6 md:px-12 text-center shrink-0 z-30 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-left">
+                <p className="text-white font-black text-sm uppercase tracking-wide">
+                  {currentPosterInfo.title}
                 </p>
-                <p className="text-secondary font-black text-[10px] uppercase tracking-wider">
-                  Tip: Use the 'Open in New Tab' button to print, save or inspect high resolution details of this schedule.
+                <p className="text-slate-400 text-xs font-medium mt-0.5">
+                  {currentPosterInfo.subtitle}
                 </p>
-                <p className="text-slate-500 font-bold text-[9px] uppercase tracking-wider mt-1 flex items-center gap-1.5">
-                  <HelpCircle size={11} className="text-slate-600" />
-                  Navigation: Keyboard arrows Left/Right, Close with Escape
-                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <a
+                  href={`tel:${siteConfig.contact?.split(',')[0] || '8004055501'}`}
+                  className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 border border-white/15 transition-all"
+                >
+                  <PhoneCall size={14} className="text-secondary" />
+                  <span>Call: 8004055501</span>
+                </a>
+                <button
+                  onClick={() => {
+                    handleClose();
+                    setIsOpdPopupOpen(true);
+                  }}
+                  className="px-5 py-2 bg-secondary hover:bg-secondary/90 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-secondary/30 transition-all cursor-pointer"
+                >
+                  <Calendar size={14} />
+                  <span>Book Appointment</span>
+                </button>
               </div>
             </div>
           </motion.div>

@@ -105,10 +105,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
           } : SITE_CONFIG.promotionPopup,
           posters: (fetched.posters && fetched.posters.length > 0)
             ? fetched.posters.filter(p => p && !p.includes('basti_hero_banner_'))
-            : (SITE_CONFIG.posters || [])
+            : (SITE_CONFIG.posters || []),
+          gallery: (fetched.gallery && fetched.gallery.length > 0 && !fetched.gallery.some(img => img.includes('unsplash.com')))
+            ? fetched.gallery
+            : (SITE_CONFIG.gallery || [])
         };
         if (!merged.posters || merged.posters.length === 0) {
           merged.posters = [SITE_CONFIG.heroBanner || '/assets/aistudio/APOLLO_Banner_0ed0eadc.jpeg'];
+        }
+        if (!merged.gallery || merged.gallery.length === 0) {
+          merged.gallery = SITE_CONFIG.gallery || [];
         }
         setSiteConfig(merged);
         setSiteConfigDbId(site.id);

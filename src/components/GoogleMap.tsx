@@ -17,17 +17,17 @@ export default function GoogleMap({ className }: GoogleMapProps) {
     return (
       <div className={`relative overflow-hidden bg-slate-100 ${className}`}>
         <img 
-          src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80&w=2000" 
-          alt="Clinic Location Map Placeholder"
-          className="w-full h-full object-cover opacity-60 grayscale"
+          src="/assets/aistudio/APOLLO_Banner_0ed0eadc.jpeg" 
+          alt="Apollo Clinic Basti Location"
+          className="w-full h-full object-cover opacity-50 blur-[1px]"
           referrerPolicy="no-referrer"
         />
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/20 backdrop-blur-[2px] p-8 text-center">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] p-8 text-center">
           <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg text-primary scale-110">
             <MapPinIcon size={32} />
           </div>
-          <h2 className="text-2xl font-black uppercase text-primary tracking-tight">Apollo Clinic Basti</h2>
-          <p className="text-sm text-slate-900 font-bold uppercase tracking-wider mt-1">Founders Place, Katra Road, Basti</p>
+          <h2 className="text-2xl font-black uppercase text-white tracking-tight">Apollo Clinic Basti</h2>
+          <p className="text-sm text-white/90 font-bold uppercase tracking-wider mt-1">Station Road, Near Navin Fal Mandi, Basti - 272002</p>
           <a 
             href="https://www.google.com/maps?rlz=1C1JJTC_enIN1094IN1094&gs_lcrp=EgZjaHJvbWUqCAgBEAAYFhgeMgYIABBFGDkyCAgBEAAYFhgeMggIAhAAGBYYHjIICAMQABgWGB4yCAgEEAAYFhgeMgYIBRBFGD0yBggGEEUYPTIGCAcQRRg80gEJMTA1MDdqMGo3qAIAsAIA&um=1&ie=UTF-8&fb=1&gl=in&sa=X&geocode=KSlZDOiA0ZA5MeI7cOrvIN2e&daddr=Railway+Station+Rd,+near+Navin+Fal+Mandi,+Basti,+Uttar+Pradesh+272001" 
             target="_blank" 
