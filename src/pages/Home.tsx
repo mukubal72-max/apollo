@@ -5,7 +5,8 @@ import { useAppContext } from '../context/AppContext';
 import { useState, useMemo, useEffect } from 'react';
 
 import GoogleMap from '../components/GoogleMap';
-import heroBannerImage from '../assets/images/basti_hero_banner_1779695031243.png';
+
+const OFFICIAL_HERO_BANNER = '/assets/aistudio/APOLLO_Banner_0ed0eadc.jpeg';
 
 export default function Home() {
   const { services, siteConfig, opdDoctors, setIsOpdPopupOpen, testimonials, isInitialLoadDone } = useAppContext();
@@ -15,29 +16,29 @@ export default function Home() {
 
   // Dynamic header banners slider logic
   const banners = useMemo(() => {
-    // If the database has not finished loading, return an empty array to avoid flashing the default pre-image
+    // If the database has not finished loading, return an empty array to avoid flashing
     if (!isInitialLoadDone) {
       return [];
     }
 
     const list: string[] = [];
     
-    // 1. Post any uploaded posters/banners from database config if available
+    // 1. Primary Hero Banner: user configured or official banner
+    const primaryBanner = (siteConfig.heroBanner && !siteConfig.heroBanner.includes('basti_hero_banner_'))
+      ? siteConfig.heroBanner
+      : OFFICIAL_HERO_BANNER;
+    
+    list.push(primaryBanner);
+
+    // 2. Add any additional uploaded posters (excluding duplicates)
     if (siteConfig.posters && siteConfig.posters.length > 0) {
-      list.push(...siteConfig.posters);
+      siteConfig.posters.forEach(poster => {
+        if (poster && !list.includes(poster) && !poster.includes('basti_hero_banner_')) {
+          list.push(poster);
+        }
+      });
     }
-    
-    // 2. Add heroBanner if explicitly configured
-    if (siteConfig.heroBanner) {
-      if (!list.includes(siteConfig.heroBanner)) {
-        list.splice(0, 0, siteConfig.heroBanner);
-      }
-    }
-    
-    // 3. Fallback to pre-generated Basti banner ONLY if we don't have any uploaded/configured posters or banners
-    if (list.length === 0) {
-      list.push(heroBannerImage);
-    }
+
     return list;
   }, [siteConfig.posters, siteConfig.heroBanner, isInitialLoadDone]);
 
@@ -271,10 +272,10 @@ export default function Home() {
         </div>
         
         {/* Floating Book Appointment button positioned over the banner */}
-        <div className="absolute bottom-[24%] right-4 sm:bottom-[28%] sm:right-8 md:bottom-[30%] md:right-12 lg:right-16 z-20">
+        <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 md:bottom-8 md:right-10 lg:right-12 z-20">
           <button 
             onClick={() => setIsOpdPopupOpen(true)}
-            className="px-6 py-3 sm:px-10 sm:py-5 bg-secondary text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-secondary/30 hover:scale-105 active:scale-95 transition-all cursor-pointer text-xs sm:text-sm"
+            className="px-6 py-3 sm:px-8 sm:py-4 bg-[#f39223] hover:bg-[#e08215] text-white rounded-xl sm:rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-orange-500/30 hover:scale-105 active:scale-95 transition-all cursor-pointer text-xs sm:text-sm border border-white/20"
           >
             Book Appointment
           </button>

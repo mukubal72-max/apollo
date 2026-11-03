@@ -7,6 +7,10 @@ export const SITE_CONFIG: SiteConfig = {
   email: "info@apollobasti.com",
   footerOwner: "Apollo Clinic Basti",
   logo: "/assets/aistudio/Apollo_Logo_3d24d242.PNG",
+  heroBanner: "/assets/aistudio/APOLLO_Banner_0ed0eadc.jpeg",
+  posters: [
+    "/assets/aistudio/APOLLO_Banner_0ed0eadc.jpeg"
+  ],
   promotionPopup: {
     enabled: true,
     title: "10% OFF ON HOME COLLECTION",

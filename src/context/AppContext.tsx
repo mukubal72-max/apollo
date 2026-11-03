@@ -96,12 +96,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const merged: SiteConfig = {
           ...SITE_CONFIG,
           ...fetched,
+          heroBanner: (fetched.heroBanner && !fetched.heroBanner.includes('basti_hero_banner_')) 
+            ? fetched.heroBanner 
+            : SITE_CONFIG.heroBanner,
           promotionPopup: fetched.promotionPopup ? {
             ...SITE_CONFIG.promotionPopup!,
             ...fetched.promotionPopup
           } : SITE_CONFIG.promotionPopup,
-          posters: fetched.posters || SITE_CONFIG.posters || []
+          posters: (fetched.posters && fetched.posters.length > 0)
+            ? fetched.posters.filter(p => p && !p.includes('basti_hero_banner_'))
+            : (SITE_CONFIG.posters || [])
         };
+        if (!merged.posters || merged.posters.length === 0) {
+          merged.posters = [SITE_CONFIG.heroBanner || '/assets/aistudio/APOLLO_Banner_0ed0eadc.jpeg'];
+        }
         setSiteConfig(merged);
         setSiteConfigDbId(site.id);
       }

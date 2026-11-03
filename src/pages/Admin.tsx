@@ -4,7 +4,7 @@ import { Plus, Trash2, Edit, Settings, Users, Activity, Lock, Upload, Image as I
 import { motion, AnimatePresence } from 'motion/react';
 import { OPDDoctor, Appointment, Testimonial, Department, HealthPackage, ClinicDocument, Media, MessageLog, StaffAccount, Template } from '../types';
 import { supabase, generateUUID } from '../lib/supabase';
-import heroBannerImage from '../assets/images/basti_hero_banner_1779695031243.png';
+const DEFAULT_HERO_BANNER = '/assets/aistudio/APOLLO_Banner_0ed0eadc.jpeg';
 
 export default function Admin() {
   const { 
@@ -1058,14 +1058,14 @@ export default function Admin() {
                           <div className="flex flex-col sm:flex-row items-center gap-8">
                             <div className="w-48 h-32 bg-white rounded-2xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden relative shadow-inner">
                               <img 
-                                src={siteConfig.heroBanner || heroBannerImage} 
+                                src={(siteConfig.heroBanner && !siteConfig.heroBanner.includes('basti_hero_banner_')) ? siteConfig.heroBanner : DEFAULT_HERO_BANNER} 
                                 alt="Homepage Hero Banner" 
                                 className="w-full h-full object-cover p-1 rounded-2xl" 
                               />
                             </div>
                             <div className="space-y-4 flex-grow">
-                              {!siteConfig.heroBanner ? (
-                                <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest">Showing Pre-generated Basti Banner</p>
+                              {(!siteConfig.heroBanner || siteConfig.heroBanner.includes('basti_hero_banner_') || siteConfig.heroBanner === DEFAULT_HERO_BANNER) ? (
+                                <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest">Showing Apollo Clinic Basti Official Banner</p>
                               ) : (
                                 <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Showing Your Custom Banner</p>
                               )}
