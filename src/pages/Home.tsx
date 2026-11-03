@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowRight, Activity, FlaskConical, HeartPulse, Stethoscope, Clock, ShieldCheck, MapPin, ChevronRight, User, Phone, Home as HomeIcon, X } from 'lucide-react';
+import { ArrowRight, Activity, FlaskConical, HeartPulse, Stethoscope, Clock, ShieldCheck, MapPin, ChevronRight, User, Phone, Home as HomeIcon, X, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { useState, useMemo, useEffect } from 'react';
@@ -271,13 +271,14 @@ export default function Home() {
           )}
         </div>
         
-        {/* Floating Book Appointment button positioned over the banner */}
-        <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 md:bottom-8 md:right-10 lg:right-12 z-20">
+        {/* Floating Book Appointment button shifted above the bottom address pill so Hindi clinic address is 100% visible */}
+        <div className="absolute bottom-[22%] sm:bottom-[23%] md:bottom-[24%] lg:bottom-[25%] right-3 sm:right-6 md:right-8 lg:right-12 z-20">
           <button 
             onClick={() => setIsOpdPopupOpen(true)}
-            className="px-6 py-3 sm:px-8 sm:py-4 bg-[#f39223] hover:bg-[#e08215] text-white rounded-xl sm:rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-orange-500/30 hover:scale-105 active:scale-95 transition-all cursor-pointer text-xs sm:text-sm border border-white/20"
+            className="px-4 py-2 sm:px-6 sm:py-3 md:px-8 md:py-4 bg-[#f39223] hover:bg-[#e08215] text-white rounded-xl sm:rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-orange-500/40 hover:scale-105 active:scale-95 transition-all cursor-pointer text-[11px] sm:text-xs md:text-sm border border-white/25 flex items-center gap-1.5 sm:gap-2"
           >
-            Book Appointment
+            <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>Book Appointment</span>
           </button>
         </div>
       </section>
