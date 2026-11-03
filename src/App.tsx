@@ -12,6 +12,7 @@ import HealthPackages from './pages/HealthPackages';
 import Gallery from './pages/Gallery';
 import OPDPopup from './components/OPDPopup';
 import { useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 
 function AppContent() {
   const { setIsOpdPopupOpen, siteConfig } = useAppContext();
@@ -212,6 +213,7 @@ export default function App() {
     <AppProvider>
       <BrowserRouter>
         <AppContent />
+        <Analytics />
       </BrowserRouter>
     </AppProvider>
   );
