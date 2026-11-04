@@ -93,26 +93,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       if (site) {
         const fetched = site.config_data as SiteConfig;
+        const GALLERY_POSTER_KEYS = [
+          'Apollo_Neuro',
+          'Apollo_Dental',
+          'Apollo_Gynno',
+          'Apollo_Child',
+          'Apollo_Gen_Physician',
+          'Apollo_OPD',
+          'Apolloo_health_check_packages'
+        ];
+        const isGalleryDoctorPoster = (url?: string) => 
+          !url || GALLERY_POSTER_KEYS.some(k => url.includes(k)) || url.includes('basti_hero_banner_');
+
+        const sanitizedHero = (fetched.heroBanner && !isGalleryDoctorPoster(fetched.heroBanner))
+          ? fetched.heroBanner
+          : SITE_CONFIG.heroBanner;
+
+        const rawPosters = fetched.posters && fetched.posters.length > 0 ? fetched.posters : (SITE_CONFIG.posters || []);
+        const sanitizedPosters = rawPosters.filter(p => p && !isGalleryDoctorPoster(p));
+
         const merged: SiteConfig = {
           ...SITE_CONFIG,
           ...fetched,
-          heroBanner: (fetched.heroBanner && !fetched.heroBanner.includes('basti_hero_banner_')) 
-            ? fetched.heroBanner 
-            : SITE_CONFIG.heroBanner,
+          heroBanner: sanitizedHero,
           promotionPopup: fetched.promotionPopup ? {
             ...SITE_CONFIG.promotionPopup!,
             ...fetched.promotionPopup
           } : SITE_CONFIG.promotionPopup,
-          posters: (fetched.posters && fetched.posters.length > 0)
-            ? fetched.posters.filter(p => p && !p.includes('basti_hero_banner_'))
-            : (SITE_CONFIG.posters || []),
+          posters: sanitizedPosters.length > 0 ? sanitizedPosters : [SITE_CONFIG.heroBanner || '/assets/aistudio/APOLLO_Banner_0ed0eadc.jpeg'],
           gallery: (fetched.gallery && fetched.gallery.length > 0 && !fetched.gallery.some(img => img.includes('unsplash.com')))
             ? fetched.gallery
             : (SITE_CONFIG.gallery || [])
         };
-        if (!merged.posters || merged.posters.length === 0) {
-          merged.posters = [SITE_CONFIG.heroBanner || '/assets/aistudio/APOLLO_Banner_0ed0eadc.jpeg'];
-        }
         if (!merged.gallery || merged.gallery.length === 0) {
           merged.gallery = SITE_CONFIG.gallery || [];
         }

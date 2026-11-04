@@ -14,7 +14,18 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState<'ailments' | 'treatments' | 'technologies'>('ailments');
   const [showPromo, setShowPromo] = useState(false);
 
-  // Dynamic header banners slider logic
+  // Doctor/clinic posters that must only be shown in Gallery, never in banners
+  const GALLERY_POSTER_KEYS = [
+    'Apollo_Neuro',
+    'Apollo_Dental',
+    'Apollo_Gynno',
+    'Apollo_Child',
+    'Apollo_Gen_Physician',
+    'Apollo_OPD',
+    'Apolloo_health_check_packages'
+  ];
+
+  // Dynamic header banners slider logic - strictly only official banner for now
   const banners = useMemo(() => {
     // If the database has not finished loading, return an empty array to avoid flashing
     if (!isInitialLoadDone) {
@@ -23,17 +34,20 @@ export default function Home() {
 
     const list: string[] = [];
     
+    const isGalleryDoctorPoster = (url?: string) => 
+      !url || GALLERY_POSTER_KEYS.some(k => url.includes(k)) || url.includes('basti_hero_banner_');
+
     // 1. Primary Hero Banner: user configured or official banner
-    const primaryBanner = (siteConfig.heroBanner && !siteConfig.heroBanner.includes('basti_hero_banner_'))
+    const primaryBanner = (siteConfig.heroBanner && !isGalleryDoctorPoster(siteConfig.heroBanner))
       ? siteConfig.heroBanner
       : OFFICIAL_HERO_BANNER;
     
     list.push(primaryBanner);
 
-    // 2. Add any additional uploaded posters (excluding duplicates)
+    // 2. Add any additional uploaded posters (strictly excluding gallery doctor posters)
     if (siteConfig.posters && siteConfig.posters.length > 0) {
       siteConfig.posters.forEach(poster => {
-        if (poster && !list.includes(poster) && !poster.includes('basti_hero_banner_')) {
+        if (poster && !list.includes(poster) && !isGalleryDoctorPoster(poster)) {
           list.push(poster);
         }
       });
