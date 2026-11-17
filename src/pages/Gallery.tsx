@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppContext } from '../context/AppContext';
+import { GALLERY_POSTER_ASSETS, resolveClinicAsset } from '../assets/media';
 import { 
   X, 
   ChevronLeft, 
@@ -78,21 +79,16 @@ export default function Gallery() {
   const [activeFilter, setActiveFilter] = useState<string>('All');
 
   // Exact 7 authentic compressed posters from Apollo Clinic Basti
-  const fallbackImages = [
-    "/assets/aistudio/Apollo_Neuro_d157e19e.jpeg",
-    "/assets/aistudio/Apollo_Dental_b9814089.jpeg",
-    "/assets/aistudio/Apollo_Gynno_f9d7aea8.jpeg",
-    "/assets/aistudio/Apollo_Child__1__e7446587.jpeg",
-    "/assets/aistudio/Apollo_Gen_Physician_e09ab5f4.jpeg",
-    "/assets/aistudio/Apollo_OPD__1__c3ebad57.jpeg",
-    "/assets/aistudio/Apolloo_health_check_packages_6b14f49a.jpeg",
-  ];
+  const fallbackImages = GALLERY_POSTER_ASSETS;
 
   const images = useMemo(() => {
     if (siteConfig.gallery && siteConfig.gallery.length > 0) {
-      // Discard any legacy dummy unsplash URLs
-      const filtered = siteConfig.gallery.filter(g => !g.includes('unsplash.com'));
-      if (filtered.length > 0) return filtered;
+      // Discard any legacy dummy unsplash URLs and resolve bundled paths
+      const resolved = siteConfig.gallery
+        .filter(g => g && !g.includes('unsplash.com'))
+        .map(g => resolveClinicAsset(g))
+        .filter(Boolean);
+      if (resolved.length > 0) return resolved;
     }
     return fallbackImages;
   }, [siteConfig.gallery]);
@@ -220,11 +216,10 @@ export default function Gallery() {
             const meta = getPosterInfo(img, i);
             return (
               <motion.div
-                key={img}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08 }}
-                viewport={{ once: true }}
+                key={`${activeFilter}-${i}-${img}`}
+                initial={{ opacity: 0.9, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: i * 0.04 }}
                 onClick={() => setSelectedIdx(i)}
                 className="group relative h-[420px] md:h-[480px] rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-200 bg-slate-950 cursor-pointer hover:border-secondary/60 hover:shadow-2xl transition-all duration-300 flex flex-col"
               >
@@ -234,8 +229,12 @@ export default function Gallery() {
                     src={img} 
                     alt={meta.title} 
                     className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-[1.03]"
-                    referrerPolicy="no-referrer"
-                    loading="lazy"
+                    onError={(e) => {
+                      const fallback = fallbackImages[i % fallbackImages.length];
+                      if (fallback && e.currentTarget.src !== fallback) {
+                        e.currentTarget.src = fallback;
+                      }
+                    }}
                   />
                   {/* Category Pill Tag */}
                   <div className="absolute top-4 left-4 z-10">

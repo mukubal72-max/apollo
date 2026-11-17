@@ -4,7 +4,8 @@ import { Plus, Trash2, Edit, Settings, Users, Activity, Lock, Upload, Image as I
 import { motion, AnimatePresence } from 'motion/react';
 import { OPDDoctor, Appointment, Testimonial, Department, HealthPackage, ClinicDocument, Media, MessageLog, StaffAccount, Template } from '../types';
 import { supabase, generateUUID } from '../lib/supabase';
-const DEFAULT_HERO_BANNER = '/assets/aistudio/APOLLO_Banner_0ed0eadc.jpeg';
+import { apolloBannerImg, apolloLogoImg, resolveClinicAsset } from '../assets/media';
+const DEFAULT_HERO_BANNER = apolloBannerImg;
 
 export default function Admin() {
   const { 
@@ -61,48 +62,53 @@ export default function Admin() {
   const [tplPlaceholders, setTplPlaceholders] = useState('');
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
 
+  const isTransientNetworkError = (err: any) => {
+    const msg = `${err?.message || ''} ${err?.details || ''}`.toLowerCase();
+    return msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('load failed');
+  };
+
   // Fetch functions
   const fetchMedia = async () => {
-    if (!supabase) return;
+    if (!supabase || (typeof navigator !== 'undefined' && navigator.onLine === false)) return;
     try {
       const { data, error } = await supabase.from('media').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       setMediaList(data || []);
     } catch (e) {
-      console.error("Error fetching media:", e);
+      if (!isTransientNetworkError(e)) console.error("Error fetching media:", e);
     }
   };
 
   const fetchMessages = async () => {
-    if (!supabase) return;
+    if (!supabase || (typeof navigator !== 'undefined' && navigator.onLine === false)) return;
     try {
       const { data, error } = await supabase.from('message_logs').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       setMessageLogs(data || []);
     } catch (e) {
-      console.error("Error fetching message logs:", e);
+      if (!isTransientNetworkError(e)) console.error("Error fetching message logs:", e);
     }
   };
 
   const fetchStaff = async () => {
-    if (!supabase) return;
+    if (!supabase || (typeof navigator !== 'undefined' && navigator.onLine === false)) return;
     try {
       const { data, error } = await supabase.from('staff_accounts').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       setStaffAccounts(data || []);
     } catch (e) {
-      console.error("Error fetching staff accounts:", e);
+      if (!isTransientNetworkError(e)) console.error("Error fetching staff accounts:", e);
     }
   };
 
   const fetchTemplates = async () => {
-    if (!supabase) return;
+    if (!supabase || (typeof navigator !== 'undefined' && navigator.onLine === false)) return;
     try {
       const { data, error } = await supabase.from('templates').select('*').order('created_at', { ascending: false });
       if (error) throw error;
       setTemplatesList(data || []);
     } catch (e) {
-      console.error("Error fetching templates:", e);
+      if (!isTransientNetworkError(e)) console.error("Error fetching templates:", e);
     }
   };
 
@@ -1025,7 +1031,7 @@ export default function Admin() {
                           <div className="flex flex-col sm:flex-row items-center gap-8">
                             <div className="w-32 h-32 bg-white rounded-2xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden">
                               <img 
-                                src={(siteConfig.logo && !siteConfig.logo.includes('apolloclinic.com/assets/images/logo.png')) ? siteConfig.logo : "/assets/aistudio/Apollo_Logo_3d24d242.PNG"} 
+                                src={(siteConfig.logo && !siteConfig.logo.includes('apolloclinic.com/assets/images/logo.png')) ? (resolveClinicAsset(siteConfig.logo) || apolloLogoImg) : apolloLogoImg} 
                                 alt="Clinic Logo" 
                                 className="w-full h-full object-contain p-2" 
                               />

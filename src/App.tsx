@@ -10,11 +10,21 @@ import OPDPage from './pages/OPD';
 import Contact from './pages/Contact';
 import HealthPackages from './pages/HealthPackages';
 import Gallery from './pages/Gallery';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import RefundPolicy from './pages/RefundPolicy';
 import OPDPopup from './components/OPDPopup';
-import { useEffect } from 'react';
+import CookieBanner, { CookieConsentChoice, COOKIE_CONSENT_STORAGE_KEY } from './components/CookieBanner';
+import { useEffect, useState } from 'react';
 import { Analytics } from '@vercel/analytics/react';
+import { apolloLogoImg, resolveClinicAsset } from './assets/media';
 
-function AppContent() {
+function AppContent({
+  cookieConsent,
+  onCookieSelect,
+}: {
+  cookieConsent: CookieConsentChoice;
+  onCookieSelect: (choice: 'all' | 'essential') => void;
+}) {
   const { setIsOpdPopupOpen, siteConfig } = useAppContext();
   const location = useLocation();
 
@@ -26,8 +36,8 @@ function AppContent() {
   // Dynamic Favicon setup
   useEffect(() => {
     const targetFavicon = (siteConfig.logo && !siteConfig.logo.includes('apolloclinic.com/assets/images/logo.png'))
-      ? siteConfig.logo
-      : '/assets/aistudio/Apollo_Logo_3d24d242.PNG';
+      ? (resolveClinicAsset(siteConfig.logo) || apolloLogoImg)
+      : apolloLogoImg;
 
     const links = document.querySelectorAll("link[rel*='icon']") as NodeListOf<HTMLLinkElement>;
     if (links.length > 0) {
@@ -86,6 +96,9 @@ function AppContent() {
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/opd-schedule" element={<OPDPage />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy initialSection="privacy" />} />
+          <Route path="/terms-of-service" element={<PrivacyPolicy initialSection="terms" />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="*" element={<Home />} />
         </Routes>
@@ -98,7 +111,7 @@ function AppContent() {
               <div className="flex items-center gap-4 mb-6">
                 <div className="bg-white p-2.5 rounded-2xl shadow-md inline-flex items-center justify-center shrink-0">
                   <img 
-                    src={(siteConfig.logo && !siteConfig.logo.includes('apolloclinic.com/assets/images/logo.png')) ? siteConfig.logo : "/assets/aistudio/Apollo_Logo_3d24d242.PNG"} 
+                    src={(siteConfig.logo && !siteConfig.logo.includes('apolloclinic.com/assets/images/logo.png')) ? (resolveClinicAsset(siteConfig.logo) || apolloLogoImg) : apolloLogoImg} 
                     alt="Apollo Clinic Basti" 
                     className="h-14 sm:h-16 w-auto object-contain" 
                   />
@@ -192,28 +205,82 @@ function AppContent() {
             </div>
           </div>
 
-          <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex flex-col gap-1">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">&copy; {new Date().getFullYear()} Apollo Clinic Basti. {siteConfig.footerOwner || "Apollo Clinic Basti"}.</p>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-white/40">Powered by Digital Communique Private Limited</p>
+          {/* Global Medical Disclaimer & Legal Footer Bar */}
+          <div className="pt-8 border-t border-white/15 space-y-6">
+            <div className="rounded-2xl bg-black/15 border border-white/15 px-5 py-4 text-[11px] sm:text-xs text-white/85 leading-relaxed">
+              <strong className="text-[#f39223] uppercase tracking-wider font-black">Medical Disclaimer: </strong>
+              Information on <strong className="text-white">www.apolloclinicbasti.com</strong> is provided for
+              general patient education and appointment scheduling only and is not a substitute for professional
+              medical advice, diagnosis, or treatment.{' '}
+              <strong className="text-white">
+                For medical emergencies, do not use this website—visit the nearest emergency hospital
+                immediately.
+              </strong>
             </div>
-            <div className="flex gap-8 uppercase font-bold text-[10px] tracking-widest">
-              <span className="text-white/60 hover:text-white cursor-pointer transition-colors">Privacy Policy</span>
-              <span className="text-white/60 hover:text-white cursor-pointer transition-colors">Terms of Service</span>
+
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+              <div className="flex flex-col gap-1.5">
+                <p className="text-[11px] font-bold tracking-wide text-white/85 leading-relaxed">
+                  &copy; 2026 Apollo Clinic Basti (Operated by C Square Medco LLP), 2788 Station Road, Basti, UP
+                  &bull; Phone:{' '}
+                  <a href="tel:8004055501" className="hover:underline text-white">
+                    8004055501
+                  </a>{' '}
+                  &bull; Email:{' '}
+                  <a href="mailto:csquare.medco@gmail.com" className="hover:underline text-white">
+                    csquare.medco@gmail.com
+                  </a>
+                </p>
+                <p className="text-[9px] font-bold uppercase tracking-widest text-white/45">
+                  Powered by Digital Communique Private Limited
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-6 sm:gap-8 uppercase font-bold text-[10px] tracking-widest shrink-0">
+                <Link to="/privacy-policy" className="text-white/80 hover:text-white hover:underline transition-colors">
+                  Privacy Policy
+                </Link>
+                <Link to="/terms-of-service" className="text-white/80 hover:text-white hover:underline transition-colors">
+                  Terms of Service
+                </Link>
+                <Link to="/refund-policy" className="text-white/80 hover:text-white hover:underline transition-colors">
+                  Refund Policy
+                </Link>
+              </div>
             </div>
           </div>
         </div>
       </footer>
+
+      <CookieBanner visible={cookieConsent === null} onSelect={onCookieSelect} />
     </div>
   );
 }
 
 export default function App() {
+  const [cookieConsent, setCookieConsent] = useState<CookieConsentChoice>(() => {
+    try {
+      const saved = localStorage.getItem(COOKIE_CONSENT_STORAGE_KEY);
+      if (saved === 'all' || saved === 'essential') return saved;
+    } catch {
+      // Ignore storage access restrictions
+    }
+    return null;
+  });
+
+  const handleCookieSelect = (choice: 'all' | 'essential') => {
+    setCookieConsent(choice);
+    try {
+      localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, choice);
+    } catch {
+      // Ignore storage access restrictions
+    }
+  };
+
   return (
     <AppProvider>
       <BrowserRouter>
-        <AppContent />
-        <Analytics />
+        <AppContent cookieConsent={cookieConsent} onCookieSelect={handleCookieSelect} />
+        {cookieConsent === 'all' && <Analytics />}
       </BrowserRouter>
     </AppProvider>
   );

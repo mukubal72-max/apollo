@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode, useRef } fro
 import { OPDDoctor, Service, SiteConfig, Appointment, Testimonial, Department, HealthPackage, ClinicDocument } from '../types';
 import { INITIAL_OPD_SCHEDULE, INITIAL_SERVICES, SITE_CONFIG, INITIAL_TESTIMONIALS, INITIAL_DEPARTMENTS, INITIAL_HEALTH_PACKAGES } from '../constants';
 import { supabase } from '../lib/supabase';
+import { apolloBannerImg, apolloLogoImg, isGalleryDoctorPosterUrl, resolveClinicAsset } from '../assets/media';
 
 interface AppContextType {
   siteConfig: SiteConfig;
@@ -59,14 +60,53 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const syncedTestimonialsRef = useRef<Testimonial[]>([]);
   const syncedDepartmentsRef = useRef<Department[]>([]);
   const syncedDocumentsRef = useRef<ClinicDocument[]>([]);
+  const isLoadingRef = useRef(false);
+  const hasHydratedFromDbRef = useRef(false);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMountedRef = useRef(true);
+
+  const isTransientFetchError = (err: any): boolean => {
+    if (!err) return false;
+    const msg = `${err.message || ''} ${err.details || ''} ${typeof err === 'string' ? err : ''}`.toLowerCase();
+    return (
+      msg.includes('failed to fetch') ||
+      msg.includes('networkerror') ||
+      msg.includes('load failed') ||
+      msg.includes('aborterror') ||
+      msg.includes('the operation was aborted') ||
+      msg.includes('network request failed')
+    );
+  };
+
+  const applyFallbackDataIfEmpty = () => {
+    if (hasHydratedFromDbRef.current) return;
+    setOpdDoctors(prev => (prev.length > 0 ? prev : INITIAL_OPD_SCHEDULE));
+    setHealthPackages(prev => (prev.length > 0 ? prev : INITIAL_HEALTH_PACKAGES));
+    setTestimonials(prev => (prev.length > 0 ? prev : INITIAL_TESTIMONIALS));
+    setDepartments(prev => (prev.length > 0 ? prev : INITIAL_DEPARTMENTS));
+  };
 
   // Initial Load & Sync from Supabase
-  const loadData = async () => {
+  const loadData = async (attempt = 0) => {
     if (!supabase) {
+      applyFallbackDataIfEmpty();
       setIsInitialLoadDone(true);
       return;
     }
-    
+
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      applyFallbackDataIfEmpty();
+      setIsInitialLoadDone(true);
+      return;
+    }
+
+    if (isLoadingRef.current && attempt === 0) {
+      return;
+    }
+
+    isLoadingRef.current = true;
+    let shouldScheduleRetry = false;
+
     try {
       const [
         { data: site, error: siteErr },
@@ -77,7 +117,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         { data: depts, error: deptsErr },
         { data: clinicFiles, error: docsFileErr }
       ] = await Promise.all([
-        supabase.from('site_config').select('*').single(),
+        supabase.from('site_config').select('*').limit(1).maybeSingle(),
         supabase.from('opd_doctors').select('*').order('created_at'),
         supabase.from('health_packages').select('*').order('created_at'),
         supabase.from('appointments').select('*').order('created_at', { ascending: false }),
@@ -86,52 +126,74 @@ export function AppProvider({ children }: { children: ReactNode }) {
         supabase.from('clinic_documents').select('*').order('created_at')
       ]);
 
-      if (siteErr && siteErr.code !== 'PGRST116') console.error("Site config load error:", siteErr);
-      if (docsErr) console.error("Doctors load error:", docsErr);
-      if (pkgsErr) console.error("Packages load error:", pkgsErr);
-      if (appsErr) console.error("Appointments load error:", appsErr);
+      if (!isMountedRef.current) return;
+
+      const errors = [
+        { label: 'Site config', err: siteErr && siteErr.code !== 'PGRST116' ? siteErr : null },
+        { label: 'Doctors', err: docsErr },
+        { label: 'Packages', err: pkgsErr },
+        { label: 'Appointments', err: appsErr },
+        { label: 'Testimonials', err: testsErr },
+        { label: 'Departments', err: deptsErr },
+        { label: 'Documents', err: docsFileErr }
+      ];
+
+      let sawTransientError = false;
+      for (const item of errors) {
+        if (!item.err) continue;
+        if (isTransientFetchError(item.err)) {
+          sawTransientError = true;
+        } else {
+          console.error(`${item.label} load error:`, item.err);
+        }
+      }
+
+      if (sawTransientError) {
+        if (!hasHydratedFromDbRef.current && attempt < 2) {
+          shouldScheduleRetry = true;
+        }
+        applyFallbackDataIfEmpty();
+      }
 
       if (site) {
         const fetched = site.config_data as SiteConfig;
-        const GALLERY_POSTER_KEYS = [
-          'Apollo_Neuro',
-          'Apollo_Dental',
-          'Apollo_Gynno',
-          'Apollo_Child',
-          'Apollo_Gen_Physician',
-          'Apollo_OPD',
-          'Apolloo_health_check_packages'
-        ];
-        const isGalleryDoctorPoster = (url?: string) => 
-          !url || GALLERY_POSTER_KEYS.some(k => url.includes(k)) || url.includes('basti_hero_banner_');
+        const isInvalidHero = !fetched.heroBanner || isGalleryDoctorPosterUrl(fetched.heroBanner);
 
-        const sanitizedHero = (fetched.heroBanner && !isGalleryDoctorPoster(fetched.heroBanner))
-          ? fetched.heroBanner
-          : SITE_CONFIG.heroBanner;
+        const resolvedHero = isInvalidHero
+          ? apolloBannerImg
+          : resolveClinicAsset(fetched.heroBanner);
+
+        const resolvedLogo = (fetched.logo && !fetched.logo.includes('apolloclinic.com/assets/images/logo.png'))
+          ? resolveClinicAsset(fetched.logo)
+          : apolloLogoImg;
 
         const rawPosters = fetched.posters && fetched.posters.length > 0 ? fetched.posters : (SITE_CONFIG.posters || []);
-        const sanitizedPosters = rawPosters.filter(p => p && !isGalleryDoctorPoster(p));
+        const sanitizedPosters = rawPosters
+          .filter(p => p && !isGalleryDoctorPosterUrl(p))
+          .map(p => resolveClinicAsset(p))
+          .filter(Boolean);
+
+        const rawGallery = (fetched.gallery && fetched.gallery.length > 0 && !fetched.gallery.some(img => img.includes('unsplash.com')))
+          ? fetched.gallery.map(g => resolveClinicAsset(g)).filter(Boolean)
+          : (SITE_CONFIG.gallery || []);
 
         const merged: SiteConfig = {
           ...SITE_CONFIG,
           ...fetched,
-          heroBanner: sanitizedHero,
+          logo: resolvedLogo || apolloLogoImg,
+          heroBanner: resolvedHero || apolloBannerImg,
           promotionPopup: fetched.promotionPopup ? {
             ...SITE_CONFIG.promotionPopup!,
             ...fetched.promotionPopup
           } : SITE_CONFIG.promotionPopup,
-          posters: sanitizedPosters.length > 0 ? sanitizedPosters : [SITE_CONFIG.heroBanner || '/assets/aistudio/APOLLO_Banner_0ed0eadc.jpeg'],
-          gallery: (fetched.gallery && fetched.gallery.length > 0 && !fetched.gallery.some(img => img.includes('unsplash.com')))
-            ? fetched.gallery
-            : (SITE_CONFIG.gallery || [])
+          posters: sanitizedPosters.length > 0 ? sanitizedPosters : [apolloBannerImg],
+          gallery: rawGallery.length > 0 ? rawGallery : (SITE_CONFIG.gallery || [])
         };
-        if (!merged.gallery || merged.gallery.length === 0) {
-          merged.gallery = SITE_CONFIG.gallery || [];
-        }
         setSiteConfig(merged);
         setSiteConfigDbId(site.id);
       }
-      if (docs) {
+      if (!docsErr && docs) {
+        hasHydratedFromDbRef.current = true;
         const mappedDocs = docs.map(d => ({
           id: d.id,
           name: d.name,
@@ -152,7 +214,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setOpdDoctors(mappedDocs);
         syncedDoctorsRef.current = mappedDocs;
       }
-      if (pkgs) {
+      if (!pkgsErr && pkgs) {
         const mappedPkgs = pkgs.map(p => ({
           id: p.id,
           name: p.name,
@@ -166,7 +228,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setHealthPackages(mappedPkgs);
         syncedPackagesRef.current = mappedPkgs;
       }
-      if (apps) {
+      if (!appsErr && apps) {
         setAppointments(apps.map(a => ({
           id: a.id,
           patientName: a.patient_name,
@@ -183,11 +245,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           finalPrice: Number(a.final_price) || 0
         })));
       }
-      if (tests) {
+      if (!testsErr && tests) {
         setTestimonials(tests);
         syncedTestimonialsRef.current = tests;
       }
-      if (depts) {
+      if (!deptsErr && depts) {
         const mappedDepts = depts.map(d => ({
           id: d.id,
           name: d.name,
@@ -197,7 +259,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setDepartments(mappedDepts);
         syncedDepartmentsRef.current = mappedDepts;
       }
-      if (clinicFiles) {
+      if (!docsFileErr && clinicFiles) {
         const mappedDocs = clinicFiles.map(f => ({
           id: f.id,
           name: f.name,
@@ -208,13 +270,34 @@ export function AppProvider({ children }: { children: ReactNode }) {
         syncedDocumentsRef.current = mappedDocs;
       }
     } catch (e) {
-      console.error("Supabase load exception:", e);
+      if (isMountedRef.current) {
+        if (isTransientFetchError(e)) {
+          if (!hasHydratedFromDbRef.current && attempt < 2) {
+            shouldScheduleRetry = true;
+          }
+          applyFallbackDataIfEmpty();
+        } else {
+          console.error("Supabase load exception:", e);
+        }
+      }
     } finally {
-      setIsInitialLoadDone(true);
+      isLoadingRef.current = false;
+      if (isMountedRef.current) {
+        setIsInitialLoadDone(true);
+        if (shouldScheduleRetry) {
+          if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+          retryTimerRef.current = setTimeout(() => {
+            if (isMountedRef.current) {
+              loadData(attempt + 1);
+            }
+          }, 1500 * (attempt + 1));
+        }
+      }
     }
   };
 
   useEffect(() => {
+    isMountedRef.current = true;
     loadData();
 
     // Setup Supabase Realtime channel for synchronization across all devices and browsers
@@ -229,30 +312,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
             schema: 'public'
           },
           () => {
-            loadData();
+            if (document.visibilityState === 'visible') {
+              loadData();
+            }
           }
         )
         .subscribe();
     }
 
-    // Focus handler for auto-refresh (if not on administrative panel)
-    const handleFocus = () => {
-      if (!window.location.pathname.toLowerCase().includes('/admin')) {
+    // Focus / online handler for auto-refresh (if not on administrative panel)
+    const handleRefresh = () => {
+      if (
+        document.visibilityState === 'visible' &&
+        (typeof navigator === 'undefined' || navigator.onLine !== false) &&
+        !window.location.pathname.toLowerCase().includes('/admin')
+      ) {
         loadData();
       }
     };
 
-    window.addEventListener('focus', handleFocus);
+    window.addEventListener('focus', handleRefresh);
+    window.addEventListener('online', handleRefresh);
 
-    // Dynamic poll interval
-    const interval = setInterval(() => {
-      if (!window.location.pathname.toLowerCase().includes('/admin')) {
-        loadData();
-      }
-    }, 10000);
+    // Dynamic poll interval (30s, only when tab is visible and online)
+    const interval = setInterval(handleRefresh, 30000);
 
     return () => {
-      window.removeEventListener('focus', handleFocus);
+      isMountedRef.current = false;
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+      }
+      window.removeEventListener('focus', handleRefresh);
+      window.removeEventListener('online', handleRefresh);
       clearInterval(interval);
       if (supabase && channel) {
         supabase.removeChannel(channel);

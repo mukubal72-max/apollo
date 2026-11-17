@@ -1,11 +1,16 @@
 import { motion } from 'motion/react';
 import { Phone, Mail, MapPin, Clock, Send, MessageCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 
 import GoogleMap from '../components/GoogleMap';
 
 export default function Contact() {
   const { siteConfig } = useAppContext();
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [whatsappOptIn, setWhatsappOptIn] = useState(true);
+  const [submitted, setSubmitted] = useState(false);
 
   return (
     <div className="container mx-auto px-4 py-20">
@@ -82,15 +87,22 @@ export default function Contact() {
             className="bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-100"
           >
             <h3 className="text-2xl font-bold mb-8">Send us a Message</h3>
-            <form className="space-y-6">
+            <form
+              className="space-y-6"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!acceptedTerms) return;
+                setSubmitted(true);
+              }}
+            >
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-600 ml-1">Full Name</label>
-                  <input type="text" className="w-full p-4 rounded-2xl border border-slate-200 outline-none focus:ring-2 focus:ring-primary transition-all" placeholder="John Doe" />
+                  <input required type="text" className="w-full p-4 rounded-2xl border border-slate-200 outline-none focus:ring-2 focus:ring-primary transition-all" placeholder="Full Name" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-600 ml-1">Phone</label>
-                  <input type="tel" className="w-full p-4 rounded-2xl border border-slate-200 outline-none focus:ring-2 focus:ring-primary transition-all" placeholder="+91 ..." />
+                  <input required type="tel" className="w-full p-4 rounded-2xl border border-slate-200 outline-none focus:ring-2 focus:ring-primary transition-all" placeholder="+91 ..." />
                 </div>
               </div>
               <div className="space-y-2">
@@ -104,9 +116,68 @@ export default function Contact() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-600 ml-1">Message</label>
-                <textarea className="w-full p-4 rounded-2xl border border-slate-200 outline-none focus:ring-2 focus:ring-primary transition-all h-32" placeholder="How can we help you?"></textarea>
+                <textarea required className="w-full p-4 rounded-2xl border border-slate-200 outline-none focus:ring-2 focus:ring-primary transition-all h-32" placeholder="How can we help you?"></textarea>
               </div>
-              <button type="submit" className="w-full py-5 bg-primary text-white rounded-2xl font-bold shadow-xl flex items-center justify-center gap-2 hover:bg-opacity-90 transition-all">
+
+              {/* DPDP Act 2023 Explicit Consent Checkboxes */}
+              <div className="space-y-3 bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    className="mt-1 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary shrink-0 cursor-pointer"
+                  />
+                  <span className="text-xs text-slate-700 leading-relaxed">
+                    I have read and agree to the{' '}
+                    <Link to="/privacy-policy" className="font-bold text-primary hover:underline">
+                      Privacy Policy
+                    </Link>
+                    ,{' '}
+                    <Link to="/terms-of-service" className="font-bold text-primary hover:underline">
+                      Terms of Service
+                    </Link>
+                    , and{' '}
+                    <Link to="/refund-policy" className="font-bold text-primary hover:underline">
+                      Refund Policy
+                    </Link>{' '}
+                    of Apollo Clinic Basti (www.apolloclinicbasti.com), and I consent to the collection and
+                    processing of my personal and health details for scheduling and delivering medical care.{' '}
+                    <span className="font-bold text-rose-600">(Required)</span>
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-3 cursor-pointer border-t border-slate-200/80 pt-3">
+                  <input
+                    type="checkbox"
+                    checked={whatsappOptIn}
+                    onChange={(e) => setWhatsappOptIn(e.target.checked)}
+                    className="mt-1 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary shrink-0 cursor-pointer"
+                  />
+                  <span className="text-xs text-slate-600 leading-relaxed">
+                    I authorize Apollo Clinic Basti to send my appointment confirmations, queue alerts,
+                    prescriptions, and diagnostic lab reports via WhatsApp and SMS to my registered mobile
+                    number. I understand I can opt out anytime by replying STOP or emailing
+                    csquare.medco@gmail.com.{' '}
+                    <span className="italic text-slate-400">(Optional / Recommended)</span>
+                  </span>
+                </label>
+              </div>
+
+              {submitted && (
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
+                  Thank you! Your message has been noted. For immediate assistance, call 8004055501.
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={!acceptedTerms}
+                className={`w-full py-5 bg-primary text-white rounded-2xl font-bold shadow-xl flex items-center justify-center gap-2 transition-all ${
+                  !acceptedTerms ? 'opacity-60 cursor-not-allowed' : 'hover:bg-opacity-90 cursor-pointer'
+                }`}
+              >
                 Send Message <Send size={18} />
               </button>
             </form>

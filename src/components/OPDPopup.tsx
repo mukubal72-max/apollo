@@ -2,8 +2,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Calendar, User, Stethoscope, Phone, ArrowLeft, CheckCircle2, ChevronRight } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { OPDDoctor } from '../types';
 import { generateUUID } from '../lib/supabase';
+import { apolloLogoImg, resolveClinicAsset } from '../assets/media';
 
 export default function OPDPopup() {
   const { 
@@ -31,6 +33,9 @@ export default function OPDPopup() {
   });
   const [dateError, setDateError] = useState('');
   const [isHomeCollection, setIsHomeCollection] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [whatsappOptIn, setWhatsappOptIn] = useState(true);
+  const [consentError, setConsentError] = useState('');
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
@@ -150,6 +155,11 @@ export default function OPDPopup() {
       setFormStep(2);
       return;
     }
+    if (!acceptedTerms) {
+      setConsentError('Please accept the Privacy Policy and Terms of Service to confirm your booking.');
+      return;
+    }
+    setConsentError('');
     if (!selectedDoctor && !selectedPackageId) return;
 
     const newAppointment = {
@@ -200,6 +210,9 @@ export default function OPDPopup() {
       setSelectedDoctor(null);
       setSelectedPackageId(null);
       setIsHomeCollection(false);
+      setAcceptedTerms(false);
+      setWhatsappOptIn(true);
+      setConsentError('');
       setDateError('');
       setPatientData({ 
         name: '', 
@@ -232,7 +245,7 @@ export default function OPDPopup() {
             {/* Header */}
             <div className="bg-white border-b border-slate-100 p-6 flex justify-between items-center shrink-0">
               <div className="flex items-center gap-6">
-                <img src={(siteConfig.logo && !siteConfig.logo.includes('apolloclinic.com/assets/images/logo.png')) ? siteConfig.logo : "/assets/aistudio/Apollo_Logo_3d24d242.PNG"} alt="Apollo Clinic Basti" className="h-10 w-auto object-contain hidden sm:block" />
+                <img src={(siteConfig.logo && !siteConfig.logo.includes('apolloclinic.com/assets/images/logo.png')) ? (resolveClinicAsset(siteConfig.logo) || apolloLogoImg) : apolloLogoImg} alt="Apollo Clinic Basti" className="h-10 w-auto object-contain hidden sm:block" />
                 <div className="w-px h-10 bg-slate-200 hidden sm:block"></div>
                 <div>
                    <h2 className="text-xl md:text-2xl font-black text-primary uppercase tracking-tight leading-none font-display">
@@ -586,13 +599,86 @@ export default function OPDPopup() {
                                   </div>
                                 </div>
                               </div>
+
+                              {/* DPDP Act 2023 Explicit Consent Checkboxes */}
+                              <div className="space-y-3 bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5">
+                                <label className="flex items-start gap-3 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    required
+                                    checked={acceptedTerms}
+                                    onChange={(e) => {
+                                      setAcceptedTerms(e.target.checked);
+                                      if (e.target.checked) setConsentError('');
+                                    }}
+                                    className="mt-1 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary shrink-0 cursor-pointer"
+                                  />
+                                  <span className="text-xs text-slate-700 leading-relaxed">
+                                    I have read and agree to the{' '}
+                                    <Link
+                                      to="/privacy-policy"
+                                      onClick={() => setIsOpdPopupOpen(false)}
+                                      className="font-bold text-primary hover:underline"
+                                    >
+                                      Privacy Policy
+                                    </Link>
+                                    ,{' '}
+                                    <Link
+                                      to="/terms-of-service"
+                                      onClick={() => setIsOpdPopupOpen(false)}
+                                      className="font-bold text-primary hover:underline"
+                                    >
+                                      Terms of Service
+                                    </Link>
+                                    , and{' '}
+                                    <Link
+                                      to="/refund-policy"
+                                      onClick={() => setIsOpdPopupOpen(false)}
+                                      className="font-bold text-primary hover:underline"
+                                    >
+                                      Refund Policy
+                                    </Link>{' '}
+                                    of Apollo Clinic Basti (www.apolloclinicbasti.com), and I consent to the
+                                    collection and processing of my personal and health details for scheduling
+                                    and delivering medical care.{' '}
+                                    <span className="font-bold text-rose-600">(Required)</span>
+                                  </span>
+                                </label>
+
+                                <label className="flex items-start gap-3 cursor-pointer border-t border-slate-200/80 pt-3">
+                                  <input
+                                    type="checkbox"
+                                    checked={whatsappOptIn}
+                                    onChange={(e) => setWhatsappOptIn(e.target.checked)}
+                                    className="mt-1 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary shrink-0 cursor-pointer"
+                                  />
+                                  <span className="text-xs text-slate-600 leading-relaxed">
+                                    I authorize Apollo Clinic Basti to send my appointment confirmations, queue
+                                    alerts, prescriptions, and diagnostic lab reports via{' '}
+                                    <strong className="text-slate-800">WhatsApp</strong> and{' '}
+                                    <strong className="text-slate-800">SMS</strong> to my registered mobile
+                                    number. I understand I can opt out anytime by replying STOP or emailing{' '}
+                                    <strong className="text-slate-800">csquare.medco@gmail.com</strong>.{' '}
+                                    <span className="italic text-slate-400">(Optional / Recommended)</span>
+                                  </span>
+                                </label>
+
+                                {consentError && (
+                                  <p className="text-xs font-bold text-rose-600 pt-1">{consentError}</p>
+                                )}
+                              </div>
                             </motion.div>
                           )}
                         </AnimatePresence>
 
                         <button 
                           type="submit"
-                          className="w-full py-5 bg-secondary text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-secondary/30 hover:scale-[1.02] transition-all flex items-center justify-center gap-3"
+                          disabled={formStep === 2 && !acceptedTerms}
+                          className={`w-full py-5 bg-secondary text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-secondary/30 transition-all flex items-center justify-center gap-3 ${
+                            formStep === 2 && !acceptedTerms
+                              ? 'opacity-60 cursor-not-allowed'
+                              : 'hover:scale-[1.02] cursor-pointer'
+                          }`}
                         >
                           {formStep === 1 ? 'Continue to Schedule' : 'Confirm & Book Now'}
                           {formStep === 1 && <ChevronRight size={18} />}

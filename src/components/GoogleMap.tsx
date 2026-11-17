@@ -2,6 +2,7 @@ import React from 'react';
 import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
 
 import { MapPin as MapPinIcon } from 'lucide-react';
+import { apolloBannerImg } from '../assets/media';
 
 const API_KEY = process.env.GOOGLE_MAPS_PLATFORM_KEY || '';
 const hasValidKey = Boolean(API_KEY) && API_KEY !== 'YOUR_API_KEY';
@@ -17,10 +18,9 @@ export default function GoogleMap({ className }: GoogleMapProps) {
     return (
       <div className={`relative overflow-hidden bg-slate-100 ${className}`}>
         <img 
-          src="/assets/aistudio/APOLLO_Banner_0ed0eadc.jpeg" 
+          src={apolloBannerImg} 
           alt="Apollo Clinic Basti Location"
           className="w-full h-full object-cover opacity-50 blur-[1px]"
-          referrerPolicy="no-referrer"
         />
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] p-8 text-center">
           <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg text-primary scale-110">

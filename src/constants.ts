@@ -1,4 +1,9 @@
 import { OPDDoctor, Service, SiteConfig, Testimonial, Department, HealthPackage } from './types';
+import {
+  apolloBannerImg,
+  apolloLogoImg,
+  GALLERY_POSTER_ASSETS,
+} from './assets/media';
 
 export const SITE_CONFIG: SiteConfig = {
   name: "Apollo Clinic Basti",
@@ -6,20 +11,12 @@ export const SITE_CONFIG: SiteConfig = {
   contact: "8004055501, 05542451088",
   email: "info@apollobasti.com",
   footerOwner: "Apollo Clinic Basti",
-  logo: "/assets/aistudio/Apollo_Logo_3d24d242.PNG",
-  heroBanner: "/assets/aistudio/APOLLO_Banner_0ed0eadc.jpeg",
+  logo: apolloLogoImg,
+  heroBanner: apolloBannerImg,
   posters: [
-    "/assets/aistudio/APOLLO_Banner_0ed0eadc.jpeg"
+    apolloBannerImg
   ],
-  gallery: [
-    "/assets/aistudio/Apollo_Neuro_d157e19e.jpeg",
-    "/assets/aistudio/Apollo_Dental_b9814089.jpeg",
-    "/assets/aistudio/Apollo_Gynno_f9d7aea8.jpeg",
-    "/assets/aistudio/Apollo_Child__1__e7446587.jpeg",
-    "/assets/aistudio/Apollo_Gen_Physician_e09ab5f4.jpeg",
-    "/assets/aistudio/Apollo_OPD__1__c3ebad57.jpeg",
-    "/assets/aistudio/Apolloo_health_check_packages_6b14f49a.jpeg"
-  ],
+  gallery: GALLERY_POSTER_ASSETS,
   promotionPopup: {
     enabled: true,
     title: "10% OFF ON HOME COLLECTION",

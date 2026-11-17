@@ -3,6 +3,7 @@ import { Menu, X, Phone, HeartPulse, Clock, MapPin, MessageCircle, Mail } from '
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
+import { apolloLogoImg, resolveClinicAsset } from '../assets/media';
 
 export default function Navbar() {
   const { siteConfig, setIsOpdPopupOpen } = useAppContext();
@@ -20,8 +21,8 @@ export default function Navbar() {
   ];
 
   const logoSrc = (siteConfig.logo && !siteConfig.logo.includes('apolloclinic.com/assets/images/logo.png'))
-    ? siteConfig.logo
-    : "/assets/aistudio/Apollo_Logo_3d24d242.PNG";
+    ? (resolveClinicAsset(siteConfig.logo) || apolloLogoImg)
+    : apolloLogoImg;
 
   return (
     <header className="sticky top-0 z-50 shadow-sm border-b border-slate-200">

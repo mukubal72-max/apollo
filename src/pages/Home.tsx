@@ -5,8 +5,9 @@ import { useAppContext } from '../context/AppContext';
 import { useState, useMemo, useEffect } from 'react';
 
 import GoogleMap from '../components/GoogleMap';
+import { apolloBannerImg, isGalleryDoctorPosterUrl, resolveClinicAsset } from '../assets/media';
 
-const OFFICIAL_HERO_BANNER = '/assets/aistudio/APOLLO_Banner_0ed0eadc.jpeg';
+const OFFICIAL_HERO_BANNER = apolloBannerImg;
 
 export default function Home() {
   const { services, siteConfig, opdDoctors, setIsOpdPopupOpen, testimonials, isInitialLoadDone } = useAppContext();
@@ -14,47 +15,31 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState<'ailments' | 'treatments' | 'technologies'>('ailments');
   const [showPromo, setShowPromo] = useState(false);
 
-  // Doctor/clinic posters that must only be shown in Gallery, never in banners
-  const GALLERY_POSTER_KEYS = [
-    'Apollo_Neuro',
-    'Apollo_Dental',
-    'Apollo_Gynno',
-    'Apollo_Child',
-    'Apollo_Gen_Physician',
-    'Apollo_OPD',
-    'Apolloo_health_check_packages'
-  ];
-
-  // Dynamic header banners slider logic - strictly only official banner for now
+  // Dynamic header banners slider logic - always render official banner immediately on initial paint
   const banners = useMemo(() => {
-    // If the database has not finished loading, return an empty array to avoid flashing
-    if (!isInitialLoadDone) {
-      return [];
-    }
-
     const list: string[] = [];
-    
-    const isGalleryDoctorPoster = (url?: string) => 
-      !url || GALLERY_POSTER_KEYS.some(k => url.includes(k)) || url.includes('basti_hero_banner_');
 
-    // 1. Primary Hero Banner: user configured or official banner
-    const primaryBanner = (siteConfig.heroBanner && !isGalleryDoctorPoster(siteConfig.heroBanner))
-      ? siteConfig.heroBanner
+    // 1. Primary Hero Banner: user configured (if valid & not a gallery poster) or official banner
+    const resolvedPrimary = (siteConfig.heroBanner && !isGalleryDoctorPosterUrl(siteConfig.heroBanner))
+      ? resolveClinicAsset(siteConfig.heroBanner)
       : OFFICIAL_HERO_BANNER;
-    
-    list.push(primaryBanner);
+
+    list.push(resolvedPrimary || OFFICIAL_HERO_BANNER);
 
     // 2. Add any additional uploaded posters (strictly excluding gallery doctor posters)
     if (siteConfig.posters && siteConfig.posters.length > 0) {
       siteConfig.posters.forEach(poster => {
-        if (poster && !list.includes(poster) && !isGalleryDoctorPoster(poster)) {
-          list.push(poster);
+        if (poster && !isGalleryDoctorPosterUrl(poster)) {
+          const resolvedPoster = resolveClinicAsset(poster);
+          if (resolvedPoster && !list.includes(resolvedPoster)) {
+            list.push(resolvedPoster);
+          }
         }
       });
     }
 
     return list;
-  }, [siteConfig.posters, siteConfig.heroBanner, isInitialLoadDone]);
+  }, [siteConfig.posters, siteConfig.heroBanner]);
 
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -233,39 +218,37 @@ export default function Home() {
       </AnimatePresence>
       {/* Hero Section */}
       <section className="relative overflow-hidden mx-4 md:mx-8 mt-4 md:mt-8 rounded-[2rem] md:rounded-[3.5rem] shadow-2xl group bg-slate-50 border border-slate-150">
-        <div className="w-full relative z-0 overflow-hidden">
-          {banners.length > 0 ? (
-            <img 
-              src={banners[0]} 
-              className="w-full h-auto opacity-0 pointer-events-none block" 
-              alt="Sizer" 
-              referrerPolicy="no-referrer"
+        <div className="w-full relative z-0 overflow-hidden aspect-[2/1]">
+          {banners.length <= 1 ? (
+            <img
+              src={banners[0] || OFFICIAL_HERO_BANNER}
+              className="w-full h-full object-cover block"
+              alt="Apollo Clinic Basti - Advanced Health Care in Basti City"
+              onError={(e) => {
+                if (e.currentTarget.src !== OFFICIAL_HERO_BANNER) {
+                  e.currentTarget.src = OFFICIAL_HERO_BANNER;
+                }
+              }}
             />
           ) : (
-            <div className="w-full aspect-[21/9] md:aspect-[3/1] bg-slate-50 lg:aspect-[2.39/1]" />
-          )}
-          
-          <div className="absolute inset-0">
             <AnimatePresence mode="wait">
-              {banners.length > 0 ? (
-                <motion.img 
-                  key={currentSlide}
-                  src={banners[currentSlide]} 
-                  initial={{ opacity: 0, scale: 1.01 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.99 }}
-                  transition={{ duration: 0.5, ease: "easeInOut" }}
-                  className="w-full h-full object-cover"
-                  alt={`Apollo Clinical Excellence Slide ${currentSlide + 1}`}
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div className="w-full h-full bg-slate-100 animate-pulse flex items-center justify-center">
-                  <div className="text-slate-300 font-bold uppercase tracking-widest text-xs">Loading banners...</div>
-                </div>
-              )}
+              <motion.img
+                key={currentSlide}
+                src={banners[currentSlide] || OFFICIAL_HERO_BANNER}
+                initial={{ opacity: 0.9, scale: 1.01 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0.9, scale: 0.99 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+                className="w-full h-full object-cover block"
+                alt={`Apollo Clinical Excellence Slide ${currentSlide + 1}`}
+                onError={(e) => {
+                  if (e.currentTarget.src !== OFFICIAL_HERO_BANNER) {
+                    e.currentTarget.src = OFFICIAL_HERO_BANNER;
+                  }
+                }}
+              />
             </AnimatePresence>
-          </div>
+          )}
 
           {/* Subtle overlay */}
           <div className="absolute inset-0 bg-slate-950/5 pointer-events-none" />
@@ -689,10 +672,9 @@ export default function Home() {
             >
               <div className="absolute inset-0 bg-secondary/20 blur-3xl -m-10 rounded-full" />
               <img 
-                src="/assets/aistudio/APOLLO_Banner_0ed0eadc.jpeg" 
+                src={OFFICIAL_HERO_BANNER} 
                 className="rounded-[3rem] shadow-2xl border-8 border-white/10 relative z-10 w-full max-w-md object-cover h-[340px]"
                 alt="Apollo Clinic Basti" 
-                referrerPolicy="no-referrer"
               />
             </motion.div>
           </div>
